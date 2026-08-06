@@ -1,5 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
+const fetch = require('node-fetch');
+const { SocksProxyAgent } = require('socks-proxy-agent');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -8,6 +10,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
+
+const agent = new SocksProxyAgent('socks5h://localhost:1055');
 
 app.use(express.json());
 
@@ -27,7 +31,7 @@ app.get('/test-db', async (req, res) => {
 const SMS_GATEWAY_URL = 'http://100.118.3.62:8080';
 
 app.post('/api/send-otp', async (req, res) => {
-  const { phone, message } = req.body;
+  const { to, message } = req.body;
 
   if (!to || !message) {
     return res.status(400).json({ success: false, error: 'رقم الهاتف أو الرسالة مفقودة' });
@@ -35,7 +39,7 @@ app.post('/api/send-otp', async (req, res) => {
 
   try {
     const url = `${SMS_GATEWAY_URL}/send?to=${encodeURIComponent(to)}&msg=${encodeURIComponent(message)}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { agent });
     const text = await response.text();
 
     if (text.includes('SMS SENT')) {
