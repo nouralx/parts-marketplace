@@ -13,7 +13,11 @@ echo "Starting tailscaled..."
 tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --socket=$TS_SOCKET --state=$TS_STATE &
 sleep 5
 
+echo "DEBUG - Key length: ${#TAILSCALE_AUTHKEY}"
+echo "DEBUG - Key starts with: ${TAILSCALE_AUTHKEY:0:15}"
+
 echo "Connecting to Tailscale network..."
-tailscale --socket=$TS_SOCKET up --authkey=${TAILSCALE_AUTHKEY} --hostname=render-backend --force-reauth
+tailscale --socket=$TS_SOCKET up --authkey=${TAILSCALE_AUTHKEY} --hostname=render-backend
+
 echo "Starting Node app..."
 node index.js
