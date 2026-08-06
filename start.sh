@@ -13,11 +13,14 @@ echo "Starting tailscaled..."
 tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --socket=$TS_SOCKET --state=$TS_STATE &
 sleep 5
 
-echo "DEBUG - Key length: ${#TAILSCALE_AUTHKEY}"
-echo "DEBUG - Key starts with: ${TAILSCALE_AUTHKEY:0:15}"
-
 echo "Connecting to Tailscale network..."
 tailscale --socket=$TS_SOCKET up --authkey=${TAILSCALE_AUTHKEY} --hostname=render-backend
+
+echo "=== Tailscale Status ==="
+tailscale --socket=$TS_SOCKET status
+
+echo "=== Testing direct connection to phone ==="
+curl --socks5-hostname localhost:1055 -m 5 http://100.126.220.10:8080/ && echo "CURL SUCCESS" || echo "CURL FAILED"
 
 echo "Starting Node app..."
 node index.js
