@@ -29,7 +29,40 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-// ============ نظام OTP الجديد (عبر sms_queue) ============
+// ============ نظام OTP (عبر sms_queue) ============
+
+// Rate Limiting: تخزين مؤقت في الذاكرة لكل IP
+const ipRequestLog = new Map(); // { ip: [timestamp1, timestamp2, ...] }
+
+function isIpRateLimited(ip) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 دقيقة
+  const maxRequests = 3;
+
+  if (!ipRequestLog.has(ip)) {
+    ipRequestLog.set(ip, []);
+  }
+
+  const timestamps = ipRequestLog.get(ip).filter(t => now - t < windowMs);
+  timestamps.push(now);
+  ipRequestLog.set(ip, timestamps);
+
+  return timestamps.length > maxRequests;
+}
+
+// تنظيف دوري للذاكرة كل ساعة
+setInterval(() => {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  for (const [ip, timestamps] of ipRequestLog.entries()) {
+    const filtered = timestamps.filter(t => now - t < windowMs);
+    if (filtered.length === 0) {
+      ipRequestLog.delete(ip);
+    } else {
+      ipRequestLog.set(ip, filtered);
+    }
+  }
+}, 60 * 60 * 1000);
 
 function generateOtpCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -42,18 +75,56 @@ app.post('/api/send-otp', async (req, res) => {
     return res.status(400).json({ success: false, error: 'رقم الهاتف أو الغرض مفقود' });
   }
 
-  const otpCode = generateOtpCode();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // صالح لمدة 5 دقائق
+  // 1. تحقق من حد IP: 3 طلبات كل 15 دقيقة
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
+  if (isIpRateLimited(clientIp)) {
+    return res.status(429).json({ success: false, error: 'عدد كبير من المحاولات من هذا الجهاز، حاول بعد 15 دقيقة' });
+  }
 
   try {
-    // 1. تخزين رمز OTP في جدول otp_verifications
+    // 2. تحقق من عدم إرسال رمز لنفس الرقم خلال آخر 60 ثانية
+    const recentCheck = await pool.query(
+      `SELECT created_at FROM otp_verifications 
+       WHERE phone = $1 ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    );
+
+    if (recentCheck.rows.length > 0) {
+      const lastCreated = new Date(recentCheck.rows[0].created_at);
+      const secondsSince = (Date.now() - lastCreated.getTime()) / 1000;
+      if (secondsSince < 60) {
+        const waitTime = Math.ceil(60 - secondsSince);
+        return res.status(429).json({ 
+          success: false, 
+          error: `الرجاء الانتظار ${waitTime} ثانية قبل إعادة الإرسال` 
+        });
+      }
+    }
+
+    // 3. تحقق من عدم تجاوز 3 طلبات خلال 3 ساعات لنفس الرقم
+    const windowCheck = await pool.query(
+      `SELECT COUNT(*) FROM otp_verifications 
+       WHERE phone = $1 AND created_at > NOW() - INTERVAL '3 hours'`,
+      [phone]
+    );
+
+    if (parseInt(windowCheck.rows[0].count) >= 3) {
+      return res.status(429).json({ 
+        success: false, 
+        error: 'تم تجاوز الحد الأقصى للمحاولات لهذا الرقم، حاول بعد 3 ساعات' 
+      });
+    }
+
+    // 4. توليد وتخزين وإرسال الرمز
+    const otpCode = generateOtpCode();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
     await pool.query(
       `INSERT INTO otp_verifications (phone, otp_code, purpose, expires_at, attempts, is_verified)
        VALUES ($1, $2, $3, $4, 0, false)`,
       [phone, otpCode, purpose, expiresAt]
     );
 
-    // 2. إدراج الرسالة في قائمة انتظار SMS
     const message = `رمز التحقق الخاص بك هو: ${otpCode}`;
     await pool.query(
       `INSERT INTO sms_queue (phone, message) VALUES ($1, $2)`,
@@ -96,6 +167,57 @@ app.post('/api/verify-otp', async (req, res) => {
       `UPDATE otp_verifications SET is_verified = true WHERE id = $1`,
       [record.id]
     );
+
+    res.json({ success: true, message: 'تم التحقق بنجاح' });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'فشل التحقق: ' + err.message });
+  }
+});
+
+// ============ نظام SMS Gateway عبر Polling ============
+
+const SMS_GATEWAY_SECRET = process.env.SMS_GATEWAY_SECRET;
+
+function checkGatewaySecret(req, res, next) {
+  if (req.headers['x-gateway-secret'] !== SMS_GATEWAY_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/sms/pending', checkGatewaySecret, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, phone, message FROM sms_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT 5`
+    );
+    res.json({ messages: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/sms/confirm', checkGatewaySecret, async (req, res) => {
+  const { id, status } = req.body;
+
+  if (!id || !status) {
+    return res.status(400).json({ error: 'Missing id or status' });
+  }
+
+  try {
+    await pool.query(
+      `UPDATE sms_queue SET status = $1, sent_at = NOW() WHERE id = $2`,
+      [status, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =======================================
+
+app.listen(port, () => console.log(`Server running on port ${port}`));    );
 
     res.json({ success: true, message: 'تم التحقق بنجاح' });
 
