@@ -28,31 +28,82 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-const SMS_GATEWAY_URL = 'http://100.126.220.10:8080';
+// ============ نظام OTP الجديد (عبر sms_queue) ============
+
+function generateOtpCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 app.post('/api/send-otp', async (req, res) => {
-  const { to, message } = req.body;
+  const { phone, purpose } = req.body;
 
-  if (!to || !message) {
-    return res.status(400).json({ success: false, error: 'رقم الهاتف أو الرسالة مفقودة' });
+  if (!phone || !purpose) {
+    return res.status(400).json({ success: false, error: 'رقم الهاتف أو الغرض مفقود' });
   }
 
-  try {
-    const url = `${SMS_GATEWAY_URL}/send?to=${encodeURIComponent(to)}&msg=${encodeURIComponent(message)}`;
-    const response = await fetch(url, { agent });
-    const text = await response.text();
+  const otpCode = generateOtpCode();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // صالح لمدة 5 دقائق
 
-    if (text.includes('SMS SENT')) {
-      res.json({ success: true, message: 'تم إرسال الرسالة بنجاح' });
-    } else {
-      res.status(500).json({ success: false, error: text });
-    }
+  try {
+    // 1. تخزين رمز OTP في جدول otp_verifications
+    await pool.query(
+      `INSERT INTO otp_verifications (phone, otp_code, purpose, expires_at, attempts, is_verified)
+       VALUES ($1, $2, $3, $4, 0, false)`,
+      [phone, otpCode, purpose, expiresAt]
+    );
+
+    // 2. إدراج الرسالة في قائمة انتظار SMS
+    const message = `رمز التحقق الخاص بك هو: ${otpCode}`;
+    await pool.query(
+      `INSERT INTO sms_queue (phone, message) VALUES ($1, $2)`,
+      [phone, message]
+    );
+
+    res.json({ success: true, message: 'تم إرسال رمز التحقق' });
+
   } catch (err) {
-    res.status(500).json({ success: false, error: 'فشل الاتصال ببوابة SMS: ' + err.message });
+    res.status(500).json({ success: false, error: 'فشل إرسال رمز التحقق: ' + err.message });
   }
 });
 
-// ============ الجزء الجديد ============
+app.post('/api/verify-otp', async (req, res) => {
+  const { phone, otp_code } = req.body;
+
+  if (!phone || !otp_code) {
+    return res.status(400).json({ success: false, error: 'رقم الهاتف أو الرمز مفقود' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM otp_verifications 
+       WHERE phone = $1 AND otp_code = $2 AND is_verified = false
+       ORDER BY created_at DESC LIMIT 1`,
+      [phone, otp_code]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح' });
+    }
+
+    const record = result.rows[0];
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ success: false, error: 'رمز التحقق منتهي الصلاحية' });
+    }
+
+    await pool.query(
+      `UPDATE otp_verifications SET is_verified = true WHERE id = $1`,
+      [record.id]
+    );
+
+    res.json({ success: true, message: 'تم التحقق بنجاح' });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'فشل التحقق: ' + err.message });
+  }
+});
+
+// ============ نظام SMS Gateway عبر Polling ============
 
 const SMS_GATEWAY_SECRET = process.env.SMS_GATEWAY_SECRET;
 
