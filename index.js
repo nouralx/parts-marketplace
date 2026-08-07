@@ -14,6 +14,7 @@ const pool = new Pool({
 const agent = new SocksProxyAgent('socks5h://localhost:1055');
 
 app.use(express.json());
+app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
   res.send('الموقع شغال بنجاح!');
