@@ -52,4 +52,46 @@ app.post('/api/send-otp', async (req, res) => {
   }
 });
 
+// ============ الجزء الجديد ============
+
+const SMS_GATEWAY_SECRET = process.env.SMS_GATEWAY_SECRET;
+
+function checkGatewaySecret(req, res, next) {
+  if (req.headers['x-gateway-secret'] !== SMS_GATEWAY_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/sms/pending', checkGatewaySecret, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, phone, message FROM sms_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT 5`
+    );
+    res.json({ messages: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/sms/confirm', checkGatewaySecret, async (req, res) => {
+  const { id, status } = req.body;
+
+  if (!id || !status) {
+    return res.status(400).json({ error: 'Missing id or status' });
+  }
+
+  try {
+    await pool.query(
+      `UPDATE sms_queue SET status = $1, sent_at = NOW() WHERE id = $2`,
+      [status, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =======================================
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
