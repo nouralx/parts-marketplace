@@ -170,6 +170,43 @@ app.post('/api/verify-otp', async (req, res) => {
   }
 });
 
+// ============الخطوة 4  ============
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'اسم المستخدم وكلمة المرور مطلوبان' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, role, full_name, username, password_hash, is_active FROM profiles WHERE username = $1`,
+      [username]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+    }
+
+    const profile = result.rows[0];
+
+    if (!profile.is_active) {
+      return res.status(403).json({ success: false, error: 'هذا الحساب موقوف، تواصل مع الدعم' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, profile.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+    }
+
+    delete profile.password_hash;
+
+    res.json({ success: true, message: 'تم تسجيل الدخول بنجاح', profile });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'فشل تسجيل الدخول: ' + err.message });
+  }
+});
 // ============ إنشاء الحساب النهائي ============
 
 const { createClient } = require('@supabase/supabase-js');
@@ -179,15 +216,21 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-app.post('/api/complete-registration', async (req, res) => {
-  const { phone, full_name, role } = req.body;
+const bcrypt = require('bcryptjs');
 
-  if (!phone || !full_name || !role) {
+app.post('/api/complete-registration', async (req, res) => {
+  const { phone, full_name, role, username, password } = req.body;
+
+  if (!phone || !full_name || !role || !username || !password) {
     return res.status(400).json({ success: false, error: 'جميع الحقول مطلوبة' });
   }
 
   if (role !== 'buyer' && role !== 'supplier') {
     return res.status(400).json({ success: false, error: 'نوع الحساب غير صحيح' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
   }
 
   try {
@@ -202,13 +245,14 @@ app.post('/api/complete-registration', async (req, res) => {
       return res.status(403).json({ success: false, error: 'يجب التحقق من رقم الهاتف أولاً' });
     }
 
-    const existingProfile = await pool.query(
-      `SELECT id FROM profiles WHERE phone = $1`,
-      [phone]
-    );
-
-    if (existingProfile.rows.length > 0) {
+    const existingPhone = await pool.query(`SELECT id FROM profiles WHERE phone = $1`, [phone]);
+    if (existingPhone.rows.length > 0) {
       return res.status(409).json({ success: false, error: 'يوجد حساب مسجل بهذا الرقم مسبقاً' });
+    }
+
+    const existingUsername = await pool.query(`SELECT id FROM profiles WHERE username = $1`, [username]);
+    if (existingUsername.rows.length > 0) {
+      return res.status(409).json({ success: false, error: 'اسم المستخدم هذا مستخدم بالفعل، اختر اسماً آخر' });
     }
 
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -221,11 +265,12 @@ app.post('/api/complete-registration', async (req, res) => {
     }
 
     const newId = authData.user.id;
+    const passwordHash = await bcrypt.hash(password, 10);
 
     await pool.query(
-      `INSERT INTO profiles (id, role, full_name, phone, is_phone_verified, is_active, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, true, true, NOW(), NOW())`,
-      [newId, role, full_name, phone]
+      `INSERT INTO profiles (id, role, full_name, phone, username, password_hash, is_phone_verified, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, true, true, NOW(), NOW())`,
+      [newId, role, full_name, phone, username, passwordHash]
     );
 
     res.json({ success: true, message: 'تم إنشاء الحساب بنجاح', profile_id: newId });
