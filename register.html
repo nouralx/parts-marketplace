@@ -125,6 +125,38 @@
     color: #9ca3af;
     pointer-events: none;
   }
+  .role-options {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .role-option {
+    flex: 1;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    padding: 16px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+    color: #374151;
+  }
+  .role-option.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+  }
+  .role-option .icon {
+    font-size: 26px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .success-icon {
+    text-align: center;
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
 </style>
 </head>
 <body>
@@ -161,14 +193,45 @@
     </div>
     <div id="msg2" class="msg"></div>
   </div>
+
+  <!-- الخطوة 3: الاسم ونوع الحساب -->
+  <div id="step3" class="step">
+    <label data-i18n="nameLabel">الاسم الكامل</label>
+    <input type="text" id="nameInput" placeholder="محمد أحمد" />
+
+    <label data-i18n="roleLabel">نوع الحساب</label>
+    <div class="role-options">
+      <div class="role-option" id="role-buyer" onclick="selectRole('buyer')">
+        <span class="icon">🛒</span>
+        <span data-i18n="roleBuyer">مشترٍ</span>
+      </div>
+      <div class="role-option" id="role-supplier" onclick="selectRole('supplier')">
+        <span class="icon">🏬</span>
+        <span data-i18n="roleSupplier">مورّد</span>
+      </div>
+    </div>
+
+    <button class="primary" id="completeBtn" onclick="completeRegistration()">
+      <span data-i18n="completeBtn">إنشاء الحساب</span>
+    </button>
+    <div id="msg3" class="msg"></div>
+  </div>
+
+  <!-- الخطوة 4: نجاح -->
+  <div id="step4" class="step">
+    <div class="success-icon">✅</div>
+    <h1 data-i18n="doneTitle">تم إنشاء حسابك بنجاح</h1>
+    <div id="msg4" class="msg success" style="display:block;text-align:center;"></div>
+  </div>
 </div>
 
 <script>
-  const API_BASE = window.location.origin; // نفس مشروع Render
+  const API_BASE = window.location.origin;
   const PURPOSE = 'registration';
 
   let currentLang = 'ar';
   let currentPhone = '';
+  let selectedRole = '';
   let resendCooldown = 0;
   let resendInterval = null;
 
@@ -181,12 +244,22 @@
       verifyBtn: 'تحقق',
       resendText: 'لم يصلك الرمز؟',
       resendLink: 'إعادة الإرسال',
+      nameLabel: 'الاسم الكامل',
+      roleLabel: 'نوع الحساب',
+      roleBuyer: 'مشترٍ',
+      roleSupplier: 'مورّد',
+      completeBtn: 'إنشاء الحساب',
+      doneTitle: 'تم إنشاء حسابك بنجاح',
       sending: 'جارٍ الإرسال...',
       verifying: 'جارٍ التحقق...',
+      creating: 'جارٍ الإنشاء...',
       otpSent: 'تم إرسال رمز التحقق إلى هاتفك',
-      otpVerified: 'تم التحقق بنجاح! جارٍ إكمال التسجيل...',
+      otpVerified: 'تم التحقق بنجاح!',
+      accountCreated: 'مرحباً بك في المنصة',
       errPhone: 'الرجاء إدخال رقم هاتف صحيح',
       errOtp: 'الرجاء إدخال رمز التحقق المكوّن من 6 أرقام',
+      errName: 'الرجاء إدخال الاسم الكامل',
+      errRole: 'الرجاء اختيار نوع الحساب',
       resendWait: 'يمكنك إعادة الإرسال بعد'
     },
     fr: {
@@ -197,12 +270,22 @@
       verifyBtn: 'Vérifier',
       resendText: "Vous n'avez pas reçu le code ?",
       resendLink: 'Renvoyer',
+      nameLabel: 'Nom complet',
+      roleLabel: 'Type de compte',
+      roleBuyer: 'Acheteur',
+      roleSupplier: 'Fournisseur',
+      completeBtn: 'Créer le compte',
+      doneTitle: 'Compte créé avec succès',
       sending: 'Envoi en cours...',
       verifying: 'Vérification en cours...',
+      creating: 'Création en cours...',
       otpSent: 'Le code a été envoyé à votre téléphone',
-      otpVerified: 'Vérifié avec succès ! Finalisation...',
+      otpVerified: 'Vérifié avec succès !',
+      accountCreated: 'Bienvenue sur la plateforme',
       errPhone: 'Veuillez entrer un numéro de téléphone valide',
       errOtp: 'Veuillez entrer le code à 6 chiffres',
+      errName: 'Veuillez entrer votre nom complet',
+      errRole: 'Veuillez choisir le type de compte',
       resendWait: 'Vous pourrez renvoyer le code dans'
     }
   };
@@ -239,6 +322,12 @@
     }
     p = p.replace('+', '');
     return p;
+  }
+
+  function selectRole(role) {
+    selectedRole = role;
+    document.getElementById('role-buyer').classList.toggle('selected', role === 'buyer');
+    document.getElementById('role-supplier').classList.toggle('selected', role === 'supplier');
   }
 
   async function sendOtp() {
@@ -300,8 +389,10 @@
 
       if (data.success) {
         showMsg('msg2', t('otpVerified'), 'success');
-        // هنا يمكن إضافة توجيه المستخدم للخطوة التالية من التسجيل
-        // مثال: window.location.href = '/complete-registration.html';
+        setTimeout(() => {
+          document.getElementById('step2').classList.remove('active');
+          document.getElementById('step3').classList.add('active');
+        }, 600);
       } else {
         showMsg('msg2', data.error || 'Error', 'error');
       }
@@ -310,6 +401,45 @@
     } finally {
       btn.disabled = false;
       btn.innerHTML = `<span data-i18n="verifyBtn">${t('verifyBtn')}</span>`;
+    }
+  }
+
+  async function completeRegistration() {
+    const name = document.getElementById('nameInput').value.trim();
+
+    if (!name) {
+      showMsg('msg3', t('errName'), 'error');
+      return;
+    }
+    if (!selectedRole) {
+      showMsg('msg3', t('errRole'), 'error');
+      return;
+    }
+
+    const btn = document.getElementById('completeBtn');
+    btn.disabled = true;
+    btn.textContent = t('creating');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/complete-registration`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: currentPhone, full_name: name, role: selectedRole })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('step3').classList.remove('active');
+        document.getElementById('step4').classList.add('active');
+        document.getElementById('msg4').textContent = t('accountCreated');
+      } else {
+        showMsg('msg3', data.error || 'Error', 'error');
+      }
+    } catch (err) {
+      showMsg('msg3', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-i18n="completeBtn">${t('completeBtn')}</span>`;
     }
   }
 
@@ -357,4 +487,3 @@
 
 </body>
 </html>
-
