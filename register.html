@@ -157,6 +157,23 @@
     font-size: 48px;
     margin-bottom: 12px;
   }
+  .hint {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: -12px;
+    margin-bottom: 16px;
+  }
+  .login-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .login-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -194,10 +211,18 @@
     <div id="msg2" class="msg"></div>
   </div>
 
-  <!-- الخطوة 3: الاسم ونوع الحساب -->
+  <!-- الخطوة 3: الاسم، نوع الحساب، اسم المستخدم وكلمة المرور -->
   <div id="step3" class="step">
     <label data-i18n="nameLabel">الاسم الكامل</label>
     <input type="text" id="nameInput" placeholder="محمد أحمد" />
+
+    <label data-i18n="usernameLabel">اسم المستخدم</label>
+    <input type="text" id="usernameInput" placeholder="mohamed_ahmed" autocapitalize="none" />
+    <div class="hint" data-i18n="usernameHint">أحرف إنجليزية وأرقام فقط، بدون مسافات</div>
+
+    <label data-i18n="passwordLabel">كلمة المرور</label>
+    <input type="password" id="passwordInput" placeholder="••••••••" />
+    <div class="hint" data-i18n="passwordHint">6 أحرف على الأقل</div>
 
     <label data-i18n="roleLabel">نوع الحساب</label>
     <div class="role-options">
@@ -222,6 +247,9 @@
     <div class="success-icon">✅</div>
     <h1 data-i18n="doneTitle">تم إنشاء حسابك بنجاح</h1>
     <div id="msg4" class="msg success" style="display:block;text-align:center;"></div>
+    <div class="login-link">
+      <a href="login.html" data-i18n="goToLogin">اذهب لتسجيل الدخول</a>
+    </div>
   </div>
 </div>
 
@@ -245,11 +273,16 @@
       resendText: 'لم يصلك الرمز؟',
       resendLink: 'إعادة الإرسال',
       nameLabel: 'الاسم الكامل',
+      usernameLabel: 'اسم المستخدم',
+      usernameHint: 'أحرف إنجليزية وأرقام فقط، بدون مسافات',
+      passwordLabel: 'كلمة المرور',
+      passwordHint: '6 أحرف على الأقل',
       roleLabel: 'نوع الحساب',
       roleBuyer: 'مشترٍ',
       roleSupplier: 'مورّد',
       completeBtn: 'إنشاء الحساب',
       doneTitle: 'تم إنشاء حسابك بنجاح',
+      goToLogin: 'اذهب لتسجيل الدخول',
       sending: 'جارٍ الإرسال...',
       verifying: 'جارٍ التحقق...',
       creating: 'جارٍ الإنشاء...',
@@ -259,6 +292,8 @@
       errPhone: 'الرجاء إدخال رقم هاتف صحيح',
       errOtp: 'الرجاء إدخال رمز التحقق المكوّن من 6 أرقام',
       errName: 'الرجاء إدخال الاسم الكامل',
+      errUsername: 'الرجاء إدخال اسم مستخدم صحيح (أحرف إنجليزية وأرقام فقط)',
+      errPassword: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
       errRole: 'الرجاء اختيار نوع الحساب',
       resendWait: 'يمكنك إعادة الإرسال بعد'
     },
@@ -271,11 +306,16 @@
       resendText: "Vous n'avez pas reçu le code ?",
       resendLink: 'Renvoyer',
       nameLabel: 'Nom complet',
+      usernameLabel: "Nom d'utilisateur",
+      usernameHint: 'Lettres et chiffres uniquement, sans espaces',
+      passwordLabel: 'Mot de passe',
+      passwordHint: '6 caractères minimum',
       roleLabel: 'Type de compte',
       roleBuyer: 'Acheteur',
       roleSupplier: 'Fournisseur',
       completeBtn: 'Créer le compte',
       doneTitle: 'Compte créé avec succès',
+      goToLogin: 'Aller à la connexion',
       sending: 'Envoi en cours...',
       verifying: 'Vérification en cours...',
       creating: 'Création en cours...',
@@ -285,6 +325,8 @@
       errPhone: 'Veuillez entrer un numéro de téléphone valide',
       errOtp: 'Veuillez entrer le code à 6 chiffres',
       errName: 'Veuillez entrer votre nom complet',
+      errUsername: "Veuillez entrer un nom d'utilisateur valide (lettres et chiffres uniquement)",
+      errPassword: 'Le mot de passe doit contenir au moins 6 caractères',
       errRole: 'Veuillez choisir le type de compte',
       resendWait: 'Vous pourrez renvoyer le code dans'
     }
@@ -406,9 +448,19 @@
 
   async function completeRegistration() {
     const name = document.getElementById('nameInput').value.trim();
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
 
     if (!name) {
       showMsg('msg3', t('errName'), 'error');
+      return;
+    }
+    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      showMsg('msg3', t('errUsername'), 'error');
+      return;
+    }
+    if (!password || password.length < 6) {
+      showMsg('msg3', t('errPassword'), 'error');
       return;
     }
     if (!selectedRole) {
@@ -424,7 +476,13 @@
       const res = await fetch(`${API_BASE}/api/complete-registration`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: currentPhone, full_name: name, role: selectedRole })
+        body: JSON.stringify({
+          phone: currentPhone,
+          full_name: name,
+          role: selectedRole,
+          username: username,
+          password: password
+        })
       });
       const data = await res.json();
 
