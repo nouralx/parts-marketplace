@@ -141,7 +141,7 @@ app.post('/api/send-otp', async (req, res) => {
     );
     const profileExists = existingProfileCheck.rows.length > 0;
 
-    if ((purpose === 'login' || purpose === 'reset_password') && !profileExists) {
+    if ((purpose === 'login' || purpose === 'password_reset') && !profileExists) {
       return res.status(404).json({ success: false, error: 'لا يوجد حساب مسجل بهذا الرقم' });
     }
 
@@ -331,7 +331,7 @@ app.post('/api/reset-password', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT * FROM otp_verifications 
-       WHERE phone = $1 AND otp_code = $2 AND purpose = 'reset_password' AND is_verified = false
+       WHERE phone = $1 AND otp_code = $2 AND purpose = 'password_reset' AND is_verified = false
        ORDER BY created_at DESC LIMIT 1`,
       [phone, otp_code]
     );
