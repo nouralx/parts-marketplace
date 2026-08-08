@@ -2,6 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const fetch = require('node-fetch');
 const { SocksProxyAgent } = require('socks-proxy-agent');
+const crypto = require('crypto');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -31,12 +32,11 @@ app.get('/test-db', async (req, res) => {
 
 // ============ نظام OTP (عبر sms_queue) ============
 
-// Rate Limiting: تخزين مؤقت في الذاكرة لكل IP
-const ipRequestLog = new Map(); // { ip: [timestamp1, timestamp2, ...] }
+const ipRequestLog = new Map();
 
 function isIpRateLimited(ip) {
   const now = Date.now();
-  const windowMs = 15 * 60 * 1000; // 15 دقيقة
+  const windowMs = 15 * 60 * 1000;
   const maxRequests = 3;
 
   if (!ipRequestLog.has(ip)) {
@@ -50,7 +50,6 @@ function isIpRateLimited(ip) {
   return timestamps.length > maxRequests;
 }
 
-// تنظيف دوري للذاكرة كل ساعة
 setInterval(() => {
   const now = Date.now();
   const windowMs = 15 * 60 * 1000;
@@ -75,14 +74,12 @@ app.post('/api/send-otp', async (req, res) => {
     return res.status(400).json({ success: false, error: 'رقم الهاتف أو الغرض مفقود' });
   }
 
-  // 1. تحقق من حد IP: 3 طلبات كل 15 دقيقة
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
   if (isIpRateLimited(clientIp)) {
     return res.status(429).json({ success: false, error: 'عدد كبير من المحاولات من هذا الجهاز، حاول بعد 15 دقيقة' });
   }
 
   try {
-    // 2. تحقق من عدم إرسال رمز لنفس الرقم خلال آخر 60 ثانية
     const recentCheck = await pool.query(
       `SELECT created_at FROM otp_verifications 
        WHERE phone = $1 ORDER BY created_at DESC LIMIT 1`,
@@ -101,7 +98,6 @@ app.post('/api/send-otp', async (req, res) => {
       }
     }
 
-    // 3. تحقق من عدم تجاوز 3 طلبات خلال 3 ساعات لنفس الرقم
     const windowCheck = await pool.query(
       `SELECT COUNT(*) FROM otp_verifications 
        WHERE phone = $1 AND created_at > NOW() - INTERVAL '3 hours'`,
@@ -115,7 +111,6 @@ app.post('/api/send-otp', async (req, res) => {
       });
     }
 
-    // 4. توليد وتخزين وإرسال الرمز
     const otpCode = generateOtpCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -172,6 +167,55 @@ app.post('/api/verify-otp', async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ success: false, error: 'فشل التحقق: ' + err.message });
+  }
+});
+
+// ============ إنشاء الحساب النهائي ============
+
+app.post('/api/complete-registration', async (req, res) => {
+  const { phone, full_name, role } = req.body;
+
+  if (!phone || !full_name || !role) {
+    return res.status(400).json({ success: false, error: 'جميع الحقول مطلوبة' });
+  }
+
+  if (role !== 'buyer' && role !== 'supplier') {
+    return res.status(400).json({ success: false, error: 'نوع الحساب غير صحيح' });
+  }
+
+  try {
+    const verifiedCheck = await pool.query(
+      `SELECT id FROM otp_verifications 
+       WHERE phone = $1 AND is_verified = true 
+       ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    );
+
+    if (verifiedCheck.rows.length === 0) {
+      return res.status(403).json({ success: false, error: 'يجب التحقق من رقم الهاتف أولاً' });
+    }
+
+    const existingProfile = await pool.query(
+      `SELECT id FROM profiles WHERE phone = $1`,
+      [phone]
+    );
+
+    if (existingProfile.rows.length > 0) {
+      return res.status(409).json({ success: false, error: 'يوجد حساب مسجل بهذا الرقم مسبقاً' });
+    }
+
+    const newId = crypto.randomUUID();
+
+    await pool.query(
+      `INSERT INTO profiles (id, role, full_name, phone, is_phone_verified, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, true, true, NOW(), NOW())`,
+      [newId, role, full_name, phone]
+    );
+
+    res.json({ success: true, message: 'تم إنشاء الحساب بنجاح', profile_id: newId });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'فشل إنشاء الحساب: ' + err.message });
   }
 });
 
