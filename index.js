@@ -141,7 +141,7 @@ app.post('/api/send-otp', async (req, res) => {
     );
     const profileExists = existingProfileCheck.rows.length > 0;
 
-    if ((purpose === 'login' || purpose === 'password_reset') && !profileExists) {
+    if ((purpose === 'login' || purpose === 'reset_password') && !profileExists) {
       return res.status(404).json({ success: false, error: 'لا يوجد حساب مسجل بهذا الرقم' });
     }
 
@@ -317,8 +317,7 @@ app.post('/api/login', async (req, res) => {
 
 // ============ إعادة تعيين كلمة المرور ============
 
-app.post('/api/password_reset'c (req, res) => {
-  const { phone, otp, async (req, res) => {
+app.post('/api/reset-password', async (req, res) => {
   const { phone, otp_code, new_password } = req.body;
 
   if (!phone || !otp_code || !new_password) {
@@ -332,7 +331,7 @@ app.post('/api/password_reset'c (req, res) => {
   try {
     const result = await pool.query(
       `SELECT * FROM otp_verifications 
-       WHERE phone = $1 AND otp_code = $2 AND purpose = 'password_reset' AND is_verified = false
+       WHERE phone = $1 AND otp_code = $2 AND purpose = 'reset_password' AND is_verified = false
        ORDER BY created_at DESC LIMIT 1`,
       [phone, otp_code]
     );
