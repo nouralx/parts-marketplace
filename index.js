@@ -3,6 +3,8 @@ const { Pool } = require('pg');
 const fetch = require('node-fetch');
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,6 +15,11 @@ const pool = new Pool({
 });
 
 const agent = new SocksProxyAgent('socks5h://localhost:1055');
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -27,6 +34,23 @@ app.get('/test-db', async (req, res) => {
     res.send('الاتصال بقاعدة البيانات نجح: ' + result.rows[0].now);
   } catch (err) {
     res.status(500).send('فشل الاتصال: ' + err.message);
+  }
+});
+
+// ============ فحص توفر اسم المستخدم ============
+
+app.get('/api/check-username', async (req, res) => {
+  const { username } = req.query;
+
+  if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+    return res.json({ available: false, error: 'صيغة غير صحيحة' });
+  }
+
+  try {
+    const result = await pool.query(`SELECT id FROM profiles WHERE username = $1`, [username]);
+    res.json({ available: result.rows.length === 0 });
+  } catch (err) {
+    res.status(500).json({ available: false, error: err.message });
   }
 });
 
@@ -111,6 +135,24 @@ app.post('/api/send-otp', async (req, res) => {
       });
     }
 
+    const existingProfileCheck = await pool.query(
+      `SELECT id FROM profiles WHERE phone = $1`,
+      [phone]
+    );
+    const profileExists = existingProfileCheck.rows.length > 0;
+
+    if ((purpose === 'login' || purpose === 'reset_password') && !profileExists) {
+      return res.status(404).json({ success: false, error: 'لا يوجد حساب مسجل بهذا الرقم' });
+    }
+
+    if (purpose === 'registration' && profileExists) {
+      return res.status(409).json({ 
+        success: false, 
+        error: 'يوجد حساب مسجل بهذا الرقم مسبقاً', 
+        already_registered: true 
+      });
+    }
+
     const otpCode = generateOtpCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -170,53 +212,7 @@ app.post('/api/verify-otp', async (req, res) => {
   }
 });
 
-// ============الخطوة 4  ============
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ success: false, error: 'اسم المستخدم وكلمة المرور مطلوبان' });
-  }
-
-  try {
-    const result = await pool.query(
-      `SELECT id, role, full_name, username, password_hash, is_active FROM profiles WHERE username = $1`,
-      [username]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
-    }
-
-    const profile = result.rows[0];
-
-    if (!profile.is_active) {
-      return res.status(403).json({ success: false, error: 'هذا الحساب موقوف، تواصل مع الدعم' });
-    }
-
-    const passwordMatch = await bcrypt.compare(password, profile.password_hash);
-    if (!passwordMatch) {
-      return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
-    }
-
-    delete profile.password_hash;
-
-    res.json({ success: true, message: 'تم تسجيل الدخول بنجاح', profile });
-
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'فشل تسجيل الدخول: ' + err.message });
-  }
-});
 // ============ إنشاء الحساب النهائي ============
-
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const bcrypt = require('bcryptjs');
 
 app.post('/api/complete-registration', async (req, res) => {
   const { phone, full_name, role, username, password } = req.body;
@@ -280,6 +276,95 @@ app.post('/api/complete-registration', async (req, res) => {
   }
 });
 
+// ============ تسجيل الدخول ============
+
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'اسم المستخدم وكلمة المرور مطلوبان' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, role, full_name, username, password_hash, is_active FROM profiles WHERE username = $1`,
+      [username]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+    }
+
+    const profile = result.rows[0];
+
+    if (!profile.is_active) {
+      return res.status(403).json({ success: false, error: 'هذا الحساب موقوف، تواصل مع الدعم' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, profile.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+    }
+
+    delete profile.password_hash;
+
+    res.json({ success: true, message: 'تم تسجيل الدخول بنجاح', profile });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'فشل تسجيل الدخول: ' + err.message });
+  }
+});
+
+// ============ إعادة تعيين كلمة المرور ============
+
+app.post('/api/reset-password', async (req, res) => {
+  const { phone, otp_code, new_password } = req.body;
+
+  if (!phone || !otp_code || !new_password) {
+    return res.status(400).json({ success: false, error: 'جميع الحقول مطلوبة' });
+  }
+
+  if (new_password.length < 6) {
+    return res.status(400).json({ success: false, error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM otp_verifications 
+       WHERE phone = $1 AND otp_code = $2 AND purpose = 'reset_password' AND is_verified = false
+       ORDER BY created_at DESC LIMIT 1`,
+      [phone, otp_code]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح' });
+    }
+
+    const record = result.rows[0];
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ success: false, error: 'رمز التحقق منتهي الصلاحية' });
+    }
+
+    await pool.query(`UPDATE otp_verifications SET is_verified = true WHERE id = $1`, [record.id]);
+
+    const passwordHash = await bcrypt.hash(new_password, 10);
+
+    const updateResult = await pool.query(
+      `UPDATE profiles SET password_hash = $1, updated_at = NOW() WHERE phone = $2 RETURNING id`,
+      [passwordHash, phone]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'لا يوجد حساب مرتبط بهذا الرقم' });
+    }
+
+    res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'فشل تغيير كلمة المرور: ' + err.message });
+  }
+});
 
 // ============ نظام SMS Gateway عبر Polling ============
 
