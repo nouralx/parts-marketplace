@@ -63,11 +63,21 @@
     border: 1px solid #d1d5db;
     border-radius: 10px;
     font-size: 15px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     outline: none;
   }
   input:focus {
     border-color: #2563eb;
+  }
+  .forgot-link {
+    text-align: left;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .forgot-link a {
+    color: #2563eb;
+    text-decoration: none;
+    cursor: pointer;
   }
   button.primary {
     width: 100%;
@@ -156,6 +166,10 @@
     <label data-i18n="passwordLabel">كلمة المرور</label>
     <input type="password" id="passwordInput" placeholder="••••••••" />
 
+    <div class="forgot-link">
+      <a href="forgot-password.html" data-i18n="forgotLink">نسيت كلمة المرور؟</a>
+    </div>
+
     <button class="primary" id="loginBtn" onclick="login()">
       <span data-i18n="loginBtn">تسجيل الدخول</span>
     </button>
@@ -184,6 +198,7 @@
       title: 'تسجيل الدخول',
       usernameLabel: 'اسم المستخدم',
       passwordLabel: 'كلمة المرور',
+      forgotLink: 'نسيت كلمة المرور؟',
       loginBtn: 'تسجيل الدخول',
       noAccountText: 'ليس لديك حساب؟',
       registerLink: 'أنشئ حساباً',
@@ -197,6 +212,7 @@
       title: 'Connexion',
       usernameLabel: "Nom d'utilisateur",
       passwordLabel: 'Mot de passe',
+      forgotLink: 'Mot de passe oublié ?',
       loginBtn: 'Se connecter',
       noAccountText: "Vous n'avez pas de compte ?",
       registerLink: 'Créer un compte',
@@ -261,9 +277,6 @@
 
         document.getElementById('step1').classList.remove('active');
         document.getElementById('step2').classList.add('active');
-
-        // يمكن حفظ بيانات الجلسة هنا لاحقاً (localStorage أو توجيه لصفحة أخرى)
-        // مثال: window.location.href = profile.role === 'supplier' ? '/supplier-dashboard.html' : '/buyer-home.html';
       } else {
         showMsg('msg1', data.error || 'Error', 'error');
       }
