@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>التسجيل / Inscription</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #fff;
+    width: 100%;
+    max-width: 420px;
+    margin: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 30px 24px;
+  }
+  .lang-switch {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .lang-switch button {
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+  }
+  .lang-switch button.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 20px;
+    text-align: center;
+    color: #1f2937;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #374151;
+  }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+  }
+  input:focus {
+    border-color: #2563eb;
+  }
+  .field-wrap {
+    margin-bottom: 16px;
+  }
+  .field-status {
+    font-size: 12px;
+    margin-top: 5px;
+    min-height: 15px;
+  }
+  .field-status.ok { color: #16a34a; }
+  .field-status.taken { color: #dc2626; }
+  .field-status.checking { color: #9ca3af; }
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.primary:disabled {
+    background: #93c5fd;
+    cursor: not-allowed;
+  }
+  button.primary:hover:not(:disabled) {
+    background: #1d4ed8;
+  }
+  .msg {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .msg.success {
+    background: #dcfce7;
+    color: #166534;
+    display: block;
+  }
+  .msg.error {
+    background: #fee2e2;
+    color: #991b1b;
+    display: block;
+  }
+  .msg a {
+    color: #991b1b;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  .step {
+    display: none;
+  }
+  .step.active {
+    display: block;
+  }
+  .resend {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .resend a {
+    color: #2563eb;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .resend a.disabled {
+    color: #9ca3af;
+    pointer-events: none;
+  }
+  .role-options {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .role-option {
+    flex: 1;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    padding: 16px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+    color: #374151;
+  }
+  .role-option.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+  }
+  .role-option .icon {
+    font-size: 26px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .success-icon {
+    text-align: center;
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  .hint {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 5px;
+  }
+  .login-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .login-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="lang-switch">
+    <button id="btn-ar" class="active" onclick="setLang('ar')">العربية</button>
+    <button id="btn-fr" onclick="setLang('fr')">Français</button>
+  </div>
+
+  <h1 data-i18n="title">إنشاء حساب جديد</h1>
+
+  <!-- الخطوة 1: إدخال رقم الهاتف -->
+  <div id="step1" class="step active">
+    <label data-i18n="phoneLabel">رقم الهاتف</label>
+    <div class="field-wrap">
+      <input type="tel" id="phoneInput" placeholder="0555 12 34 56" />
+    </div>
+    <button class="primary" id="sendBtn" onclick="sendOtp()">
+      <span data-i18n="sendBtn">إرسال رمز التحقق</span>
+    </button>
+    <div id="msg1" class="msg"></div>
+  </div>
+
+  <!-- الخطوة 2: إدخال رمز التحقق -->
+  <div id="step2" class="step">
+    <label data-i18n="otpLabel">رمز التحقق</label>
+    <div class="field-wrap">
+      <input type="text" id="otpInput" maxlength="6" placeholder="123456" />
+    </div>
+    <button class="primary" id="verifyBtn" onclick="verifyOtp()">
+      <span data-i18n="verifyBtn">تحقق</span>
+    </button>
+    <div class="resend">
+      <span data-i18n="resendText">لم يصلك الرمز؟</span>
+      <a id="resendLink" onclick="resendOtp()" data-i18n="resendLink">إعادة الإرسال</a>
+      <span id="resendTimer"></span>
+    </div>
+    <div id="msg2" class="msg"></div>
+  </div>
+
+  <!-- الخطوة 3: الاسم، اسم المستخدم، كلمتا المرور، نوع الحساب -->
+  <div id="step3" class="step">
+    <label data-i18n="nameLabel">الاسم الكامل</label>
+    <div class="field-wrap">
+      <input type="text" id="nameInput" placeholder="محمد أحمد" />
+    </div>
+
+    <label data-i18n="usernameLabel">اسم المستخدم</label>
+    <div class="field-wrap">
+      <input type="text" id="usernameInput" placeholder="mohamed_ahmed" autocapitalize="none" oninput="checkUsername()" />
+      <div id="usernameStatus" class="field-status"></div>
+    </div>
+
+    <label data-i18n="passwordLabel">كلمة المرور</label>
+    <div class="field-wrap">
+      <input type="password" id="passwordInput" placeholder="••••••••" />
+      <div class="hint" data-i18n="passwordHint">6 أحرف على الأقل</div>
+    </div>
+
+    <label data-i18n="confirmPasswordLabel">تأكيد كلمة المرور</label>
+    <div class="field-wrap">
+      <input type="password" id="confirmPasswordInput" placeholder="••••••••" />
+      <div id="confirmStatus" class="field-status"></div>
+    </div>
+
+    <label data-i18n="roleLabel">نوع الحساب</label>
+    <div class="role-options">
+      <div class="role-option" id="role-buyer" onclick="selectRole('buyer')">
+        <span class="icon">🛒</span>
+        <span data-i18n="roleBuyer">مشترٍ</span>
+      </div>
+      <div class="role-option" id="role-supplier" onclick="selectRole('supplier')">
+        <span class="icon">🏬</span>
+        <span data-i18n="roleSupplier">مورّد</span>
+      </div>
+    </div>
+
+    <button class="primary" id="completeBtn" onclick="completeRegistration()">
+      <span data-i18n="completeBtn">إنشاء الحساب</span>
+    </button>
+    <div id="msg3" class="msg"></div>
+  </div>
+
+  <!-- الخطوة 4: نجاح -->
+  <div id="step4" class="step">
+    <div class="success-icon">✅</div>
+    <h1 data-i18n="doneTitle">تم إنشاء حسابك بنجاح</h1>
+    <div id="msg4" class="msg success" style="display:block;text-align:center;"></div>
+    <div class="login-link">
+      <a href="login.html" data-i18n="goToLogin">اذهب لتسجيل الدخول</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  const PURPOSE = 'registration';
+
+  let currentLang = 'ar';
+  let currentPhone = '';
+  let selectedRole = '';
+  let resendCooldown = 0;
+  let resendInterval = null;
+  let usernameCheckTimeout = null;
+  let usernameIsAvailable = false;
+
+  const translations = {
+    ar: {
+      title: 'إنشاء حساب جديد',
+      phoneLabel: 'رقم الهاتف',
+      sendBtn: 'إرسال رمز التحقق',
+      otpLabel: 'رمز التحقق',
+      verifyBtn: 'تحقق',
+      resendText: 'لم يصلك الرمز؟',
+      resendLink: 'إعادة الإرسال',
+      nameLabel: 'الاسم الكامل',
+      usernameLabel: 'اسم المستخدم',
+      passwordLabel: 'كلمة المرور',
+      passwordHint: '6 أحرف على الأقل',
+      confirmPasswordLabel: 'تأكيد كلمة المرور',
+      roleLabel: 'نوع الحساب',
+      roleBuyer: 'مشترٍ',
+      roleSupplier: 'مورّد',
+      completeBtn: 'إنشاء الحساب',
+      doneTitle: 'تم إنشاء حسابك بنجاح',
+      goToLogin: 'اذهب لتسجيل الدخول',
+      sending: 'جارٍ الإرسال...',
+      verifying: 'جارٍ التحقق...',
+      creating: 'جارٍ الإنشاء...',
+      otpSent: 'تم إرسال رمز التحقق إلى هاتفك',
+      otpVerified: 'تم التحقق بنجاح!',
+      accountCreated: 'مرحباً بك في المنصة',
+      errPhone: 'الرجاء إدخال رقم هاتف صحيح',
+      errOtp: 'الرجاء إدخال رمز التحقق المكوّن من 6 أرقام',
+      errName: 'الرجاء إدخال الاسم الكامل',
+      errUsername: 'الرجاء إدخال اسم مستخدم صحيح (أحرف إنجليزية وأرقام فقط)',
+      errUsernameTaken: 'اسم المستخدم هذا محجوز، اختر اسماً آخر',
+      errPassword: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+      errConfirmPassword: 'كلمتا المرور غير متطابقتين',
+      errRole: 'الرجاء اختيار نوع الحساب',
+      resendWait: 'يمكنك إعادة الإرسال بعد',
+      checking: 'جارٍ التحقق...',
+      usernameAvailable: '✓ اسم المستخدم متاح',
+      usernameTaken: '✗ اسم المستخدم محجوز',
+      passwordsMatch: '✓ متطابقتان',
+      passwordsDontMatch: '✗ غير متطابقتين',
+      alreadyRegisteredMsg: 'يوجد حساب مسجل بهذا الرقم مسبقاً.',
+      loginHere: 'سجّل الدخول من هنا'
+    },
+    fr: {
+      title: 'Créer un compte',
+      phoneLabel: 'Numéro de téléphone',
+      sendBtn: 'Envoyer le code',
+      otpLabel: 'Code de vérification',
+      verifyBtn: 'Vérifier',
+      resendText: "Vous n'avez pas reçu le code ?",
+      resendLink: 'Renvoyer',
+      nameLabel: 'Nom complet',
+      usernameLabel: "Nom d'utilisateur",
+      passwordLabel: 'Mot de passe',
+      passwordHint: '6 caractères minimum',
+      confirmPasswordLabel: 'Confirmer le mot de passe',
+      roleLabel: 'Type de compte',
+      roleBuyer: 'Acheteur',
+      roleSupplier: 'Fournisseur',
+      completeBtn: 'Créer le compte',
+      doneTitle: 'Compte créé avec succès',
+      goToLogin: 'Aller à la connexion',
+      sending: 'Envoi en cours...',
+      verifying: 'Vérification en cours...',
+      creating: 'Création en cours...',
+      otpSent: 'Le code a été envoyé à votre téléphone',
+      otpVerified: 'Vérifié avec succès !',
+      accountCreated: 'Bienvenue sur la plateforme',
+      errPhone: 'Veuillez entrer un numéro de téléphone valide',
+      errOtp: 'Veuillez entrer le code à 6 chiffres',
+      errName: 'Veuillez entrer votre nom complet',
+      errUsername: "Nom d'utilisateur invalide (lettres et chiffres uniquement)",
+      errUsernameTaken: "Ce nom d'utilisateur est déjà pris",
+      errPassword: 'Le mot de passe doit contenir au moins 6 caractères',
+      errConfirmPassword: 'Les mots de passe ne correspondent pas',
+      errRole: 'Veuillez choisir le type de compte',
+      resendWait: 'Vous pourrez renvoyer le code dans',
+      checking: 'Vérification...',
+      usernameAvailable: '✓ Disponible',
+      usernameTaken: '✗ Déjà pris',
+      passwordsMatch: '✓ Identiques',
+      passwordsDontMatch: '✗ Différents',
+      alreadyRegisteredMsg: 'Un compte existe déjà avec ce numéro.',
+      loginHere: 'Connectez-vous ici'
+    }
+  };
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+    document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[lang][key]) {
+        el.textContent = translations[lang][key];
+      }
+    });
+  }
+
+  function t(key) {
+    return translations[currentLang][key];
+  }
+
+  function showMsg(elId, text, type) {
+    const el = document.getElementById(elId);
+    el.textContent = text;
+    el.className = 'msg ' + type;
+  }
+
+  function showMsgHtml(elId, html, type) {
+    const el = document.getElementById(elId);
+    el.innerHTML = html;
+    el.className = 'msg ' + type;
+  }
+
+  function normalizePhone(raw) {
+    let p = raw.replace(/\s|-/g, '');
+    if (p.startsWith('0')) {
+      p = '213' + p.substring(1);
+    }
+    p = p.replace('+', '');
+    return p;
+  }
+
+  function selectRole(role) {
+    selectedRole = role;
+    document.getElementById('role-buyer').classList.toggle('selected', role === 'buyer');
+    document.getElementById('role-supplier').classList.toggle('selected', role === 'supplier');
+  }
+
+  function checkUsername() {
+    const username = document.getElementById('usernameInput').value.trim();
+    const statusEl = document.getElementById('usernameStatus');
+    usernameIsAvailable = false;
+
+    clearTimeout(usernameCheckTimeout);
+
+    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      statusEl.textContent = username ? t('errUsername') : '';
+      statusEl.className = 'field-status taken';
+      return;
+    }
+
+    statusEl.textContent = t('checking');
+    statusEl.className = 'field-status checking';
+
+    usernameCheckTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/check-username?username=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        if (data.available) {
+          usernameIsAvailable = true;
+          statusEl.textContent = t('usernameAvailable');
+          statusEl.className = 'field-status ok';
+        } else {
+          usernameIsAvailable = false;
+          statusEl.textContent = t('usernameTaken');
+          statusEl.className = 'field-status taken';
+        }
+      } catch (err) {
+        statusEl.textContent = '';
+      }
+    }, 500);
+  }
+
+  function checkPasswordMatch() {
+    const password = document.getElementById('passwordInput').value;
+    const confirm = document.getElementById('confirmPasswordInput').value;
+    const statusEl = document.getElementById('confirmStatus');
+
+    if (!confirm) {
+      statusEl.textContent = '';
+      return;
+    }
+
+    if (password === confirm) {
+      statusEl.textContent = t('passwordsMatch');
+      statusEl.className = 'field-status ok';
+    } else {
+      statusEl.textContent = t('passwordsDontMatch');
+      statusEl.className = 'field-status taken';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('confirmPasswordInput').addEventListener('input', checkPasswordMatch);
+    document.getElementById('passwordInput').addEventListener('input', checkPasswordMatch);
+  });
+
+  async function sendOtp() {
+    const raw = document.getElementById('phoneInput').value.trim();
+    if (!raw || raw.length < 8) {
+      showMsg('msg1', t('errPhone'), 'error');
+      return;
+    }
+
+    currentPhone = normalizePhone(raw);
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    btn.textContent = t('sending');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: currentPhone, purpose: PURPOSE })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showMsg('msg1', t('otpSent'), 'success');
+        setTimeout(() => {
+          document.getElementById('step1').classList.remove('active');
+          document.getElementById('step2').classList.add('active');
+          startResendCooldown();
+        }, 800);
+      } else if (data.already_registered) {
+        showMsgHtml('msg1', `${t('alreadyRegisteredMsg')} <a href="login.html">${t('loginHere')}</a>`, 'error');
+      } else {
+        showMsg('msg1', data.error || 'Error', 'error');
+      }
+    } catch (err) {
+      showMsg('msg1', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-i18n="sendBtn">${t('sendBtn')}</span>`;
+    }
+  }
+
+  async function verifyOtp() {
+    const code = document.getElementById('otpInput').value.trim();
+    if (!code || code.length !== 6) {
+      showMsg('msg2', t('errOtp'), 'error');
+      return;
+    }
+
+    const btn = document.getElementById('verifyBtn');
+    btn.disabled = true;
+    btn.textContent = t('verifying');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: currentPhone, otp_code: code })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showMsg('msg2', t('otpVerified'), 'success');
+        setTimeout(() => {
+          document.getElementById('step2').classList.remove('active');
+          document.getElementById('step3').classList.add('active');
+        }, 600);
+      } else {
+        showMsg('msg2', data.error || 'Error', 'error');
+      }
+    } catch (err) {
+      showMsg('msg2', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-i18n="verifyBtn">${t('verifyBtn')}</span>`;
+    }
+  }
+
+  async function completeRegistration() {
+    const name = document.getElementById('nameInput').value.trim();
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+    if (!name) {
+      showMsg('msg3', t('errName'), 'error');
+      return;
+    }
+    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      showMsg('msg3', t('errUsername'), 'error');
+      return;
+    }
+    if (!usernameIsAvailable) {
+      showMsg('msg3', t('errUsernameTaken'), 'error');
+      return;
+    }
+    if (!password || password.length < 6) {
+      showMsg('msg3', t('errPassword'), 'error');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showMsg('msg3', t('errConfirmPassword'), 'error');
+      return;
+    }
+    if (!selectedRole) {
+      showMsg('msg3', t('errRole'), 'error');
+      return;
+    }
+
+    const btn = document.getElementById('completeBtn');
+    btn.disabled = true;
+    btn.textContent = t('creating');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/complete-registration`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: currentPhone,
+          full_name: name,
+          role: selectedRole,
+          username: username,
+          password: password
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('step3').classList.remove('active');
+        document.getElementById('step4').classList.add('active');
+        document.getElementById('msg4').textContent = t('accountCreated');
+      } else {
+        showMsg('msg3', data.error || 'Error', 'error');
+      }
+    } catch (err) {
+      showMsg('msg3', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-i18n="completeBtn">${t('completeBtn')}</span>`;
+    }
+  }
+
+  function startResendCooldown() {
+    resendCooldown = 60;
+    const link = document.getElementById('resendLink');
+    const timer = document.getElementById('resendTimer');
+    link.classList.add('disabled');
+
+    resendInterval = setInterval(() => {
+      resendCooldown--;
+      timer.textContent = ` (${t('resendWait')} ${resendCooldown}s)`;
+      if (resendCooldown <= 0) {
+        clearInterval(resendInterval);
+        link.classList.remove('disabled');
+        timer.textContent = '';
+      }
+    }, 1000);
+  }
+
+  async function resendOtp() {
+    if (resendCooldown > 0) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: currentPhone, purpose: PURPOSE })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showMsg('msg2', t('otpSent'), 'success');
+        startResendCooldown();
+      } else {
+        showMsg('msg2', data.error || 'Error', 'error');
+      }
+    } catch (err) {
+      showMsg('msg2', 'Network error: ' + err.message, 'error');
+    }
+  }
+
+  setLang('ar');
+</script>
+
+</body>
+</html>
