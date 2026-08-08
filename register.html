@@ -63,12 +63,22 @@
     border: 1px solid #d1d5db;
     border-radius: 10px;
     font-size: 15px;
-    margin-bottom: 16px;
     outline: none;
   }
   input:focus {
     border-color: #2563eb;
   }
+  .field-wrap {
+    margin-bottom: 16px;
+  }
+  .field-status {
+    font-size: 12px;
+    margin-top: 5px;
+    min-height: 15px;
+  }
+  .field-status.ok { color: #16a34a; }
+  .field-status.taken { color: #dc2626; }
+  .field-status.checking { color: #9ca3af; }
   button.primary {
     width: 100%;
     padding: 13px;
@@ -103,6 +113,11 @@
     background: #fee2e2;
     color: #991b1b;
     display: block;
+  }
+  .msg a {
+    color: #991b1b;
+    font-weight: 700;
+    text-decoration: underline;
   }
   .step {
     display: none;
@@ -160,8 +175,7 @@
   .hint {
     font-size: 12px;
     color: #9ca3af;
-    margin-top: -12px;
-    margin-bottom: 16px;
+    margin-top: 5px;
   }
   .login-link {
     text-align: center;
@@ -189,7 +203,9 @@
   <!-- الخطوة 1: إدخال رقم الهاتف -->
   <div id="step1" class="step active">
     <label data-i18n="phoneLabel">رقم الهاتف</label>
-    <input type="tel" id="phoneInput" placeholder="0555 12 34 56" />
+    <div class="field-wrap">
+      <input type="tel" id="phoneInput" placeholder="0555 12 34 56" />
+    </div>
     <button class="primary" id="sendBtn" onclick="sendOtp()">
       <span data-i18n="sendBtn">إرسال رمز التحقق</span>
     </button>
@@ -199,7 +215,9 @@
   <!-- الخطوة 2: إدخال رمز التحقق -->
   <div id="step2" class="step">
     <label data-i18n="otpLabel">رمز التحقق</label>
-    <input type="text" id="otpInput" maxlength="6" placeholder="123456" />
+    <div class="field-wrap">
+      <input type="text" id="otpInput" maxlength="6" placeholder="123456" />
+    </div>
     <button class="primary" id="verifyBtn" onclick="verifyOtp()">
       <span data-i18n="verifyBtn">تحقق</span>
     </button>
@@ -211,18 +229,30 @@
     <div id="msg2" class="msg"></div>
   </div>
 
-  <!-- الخطوة 3: الاسم، نوع الحساب، اسم المستخدم وكلمة المرور -->
+  <!-- الخطوة 3: الاسم، اسم المستخدم، كلمتا المرور، نوع الحساب -->
   <div id="step3" class="step">
     <label data-i18n="nameLabel">الاسم الكامل</label>
-    <input type="text" id="nameInput" placeholder="محمد أحمد" />
+    <div class="field-wrap">
+      <input type="text" id="nameInput" placeholder="محمد أحمد" />
+    </div>
 
     <label data-i18n="usernameLabel">اسم المستخدم</label>
-    <input type="text" id="usernameInput" placeholder="mohamed_ahmed" autocapitalize="none" />
-    <div class="hint" data-i18n="usernameHint">أحرف إنجليزية وأرقام فقط، بدون مسافات</div>
+    <div class="field-wrap">
+      <input type="text" id="usernameInput" placeholder="mohamed_ahmed" autocapitalize="none" oninput="checkUsername()" />
+      <div id="usernameStatus" class="field-status"></div>
+    </div>
 
     <label data-i18n="passwordLabel">كلمة المرور</label>
-    <input type="password" id="passwordInput" placeholder="••••••••" />
-    <div class="hint" data-i18n="passwordHint">6 أحرف على الأقل</div>
+    <div class="field-wrap">
+      <input type="password" id="passwordInput" placeholder="••••••••" />
+      <div class="hint" data-i18n="passwordHint">6 أحرف على الأقل</div>
+    </div>
+
+    <label data-i18n="confirmPasswordLabel">تأكيد كلمة المرور</label>
+    <div class="field-wrap">
+      <input type="password" id="confirmPasswordInput" placeholder="••••••••" />
+      <div id="confirmStatus" class="field-status"></div>
+    </div>
 
     <label data-i18n="roleLabel">نوع الحساب</label>
     <div class="role-options">
@@ -262,6 +292,8 @@
   let selectedRole = '';
   let resendCooldown = 0;
   let resendInterval = null;
+  let usernameCheckTimeout = null;
+  let usernameIsAvailable = false;
 
   const translations = {
     ar: {
@@ -274,9 +306,9 @@
       resendLink: 'إعادة الإرسال',
       nameLabel: 'الاسم الكامل',
       usernameLabel: 'اسم المستخدم',
-      usernameHint: 'أحرف إنجليزية وأرقام فقط، بدون مسافات',
       passwordLabel: 'كلمة المرور',
       passwordHint: '6 أحرف على الأقل',
+      confirmPasswordLabel: 'تأكيد كلمة المرور',
       roleLabel: 'نوع الحساب',
       roleBuyer: 'مشترٍ',
       roleSupplier: 'مورّد',
@@ -293,9 +325,18 @@
       errOtp: 'الرجاء إدخال رمز التحقق المكوّن من 6 أرقام',
       errName: 'الرجاء إدخال الاسم الكامل',
       errUsername: 'الرجاء إدخال اسم مستخدم صحيح (أحرف إنجليزية وأرقام فقط)',
+      errUsernameTaken: 'اسم المستخدم هذا محجوز، اختر اسماً آخر',
       errPassword: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+      errConfirmPassword: 'كلمتا المرور غير متطابقتين',
       errRole: 'الرجاء اختيار نوع الحساب',
-      resendWait: 'يمكنك إعادة الإرسال بعد'
+      resendWait: 'يمكنك إعادة الإرسال بعد',
+      checking: 'جارٍ التحقق...',
+      usernameAvailable: '✓ اسم المستخدم متاح',
+      usernameTaken: '✗ اسم المستخدم محجوز',
+      passwordsMatch: '✓ متطابقتان',
+      passwordsDontMatch: '✗ غير متطابقتين',
+      alreadyRegisteredMsg: 'يوجد حساب مسجل بهذا الرقم مسبقاً.',
+      loginHere: 'سجّل الدخول من هنا'
     },
     fr: {
       title: 'Créer un compte',
@@ -307,9 +348,9 @@
       resendLink: 'Renvoyer',
       nameLabel: 'Nom complet',
       usernameLabel: "Nom d'utilisateur",
-      usernameHint: 'Lettres et chiffres uniquement, sans espaces',
       passwordLabel: 'Mot de passe',
       passwordHint: '6 caractères minimum',
+      confirmPasswordLabel: 'Confirmer le mot de passe',
       roleLabel: 'Type de compte',
       roleBuyer: 'Acheteur',
       roleSupplier: 'Fournisseur',
@@ -325,10 +366,19 @@
       errPhone: 'Veuillez entrer un numéro de téléphone valide',
       errOtp: 'Veuillez entrer le code à 6 chiffres',
       errName: 'Veuillez entrer votre nom complet',
-      errUsername: "Veuillez entrer un nom d'utilisateur valide (lettres et chiffres uniquement)",
+      errUsername: "Nom d'utilisateur invalide (lettres et chiffres uniquement)",
+      errUsernameTaken: "Ce nom d'utilisateur est déjà pris",
       errPassword: 'Le mot de passe doit contenir au moins 6 caractères',
+      errConfirmPassword: 'Les mots de passe ne correspondent pas',
       errRole: 'Veuillez choisir le type de compte',
-      resendWait: 'Vous pourrez renvoyer le code dans'
+      resendWait: 'Vous pourrez renvoyer le code dans',
+      checking: 'Vérification...',
+      usernameAvailable: '✓ Disponible',
+      usernameTaken: '✗ Déjà pris',
+      passwordsMatch: '✓ Identiques',
+      passwordsDontMatch: '✗ Différents',
+      alreadyRegisteredMsg: 'Un compte existe déjà avec ce numéro.',
+      loginHere: 'Connectez-vous ici'
     }
   };
 
@@ -357,6 +407,12 @@
     el.className = 'msg ' + type;
   }
 
+  function showMsgHtml(elId, html, type) {
+    const el = document.getElementById(elId);
+    el.innerHTML = html;
+    el.className = 'msg ' + type;
+  }
+
   function normalizePhone(raw) {
     let p = raw.replace(/\s|-/g, '');
     if (p.startsWith('0')) {
@@ -371,6 +427,65 @@
     document.getElementById('role-buyer').classList.toggle('selected', role === 'buyer');
     document.getElementById('role-supplier').classList.toggle('selected', role === 'supplier');
   }
+
+  function checkUsername() {
+    const username = document.getElementById('usernameInput').value.trim();
+    const statusEl = document.getElementById('usernameStatus');
+    usernameIsAvailable = false;
+
+    clearTimeout(usernameCheckTimeout);
+
+    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      statusEl.textContent = username ? t('errUsername') : '';
+      statusEl.className = 'field-status taken';
+      return;
+    }
+
+    statusEl.textContent = t('checking');
+    statusEl.className = 'field-status checking';
+
+    usernameCheckTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/check-username?username=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        if (data.available) {
+          usernameIsAvailable = true;
+          statusEl.textContent = t('usernameAvailable');
+          statusEl.className = 'field-status ok';
+        } else {
+          usernameIsAvailable = false;
+          statusEl.textContent = t('usernameTaken');
+          statusEl.className = 'field-status taken';
+        }
+      } catch (err) {
+        statusEl.textContent = '';
+      }
+    }, 500);
+  }
+
+  function checkPasswordMatch() {
+    const password = document.getElementById('passwordInput').value;
+    const confirm = document.getElementById('confirmPasswordInput').value;
+    const statusEl = document.getElementById('confirmStatus');
+
+    if (!confirm) {
+      statusEl.textContent = '';
+      return;
+    }
+
+    if (password === confirm) {
+      statusEl.textContent = t('passwordsMatch');
+      statusEl.className = 'field-status ok';
+    } else {
+      statusEl.textContent = t('passwordsDontMatch');
+      statusEl.className = 'field-status taken';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('confirmPasswordInput').addEventListener('input', checkPasswordMatch);
+    document.getElementById('passwordInput').addEventListener('input', checkPasswordMatch);
+  });
 
   async function sendOtp() {
     const raw = document.getElementById('phoneInput').value.trim();
@@ -399,6 +514,8 @@
           document.getElementById('step2').classList.add('active');
           startResendCooldown();
         }, 800);
+      } else if (data.already_registered) {
+        showMsgHtml('msg1', `${t('alreadyRegisteredMsg')} <a href="login.html">${t('loginHere')}</a>`, 'error');
       } else {
         showMsg('msg1', data.error || 'Error', 'error');
       }
@@ -450,6 +567,7 @@
     const name = document.getElementById('nameInput').value.trim();
     const username = document.getElementById('usernameInput').value.trim();
     const password = document.getElementById('passwordInput').value;
+    const confirmPassword = document.getElementById('confirmPasswordInput').value;
 
     if (!name) {
       showMsg('msg3', t('errName'), 'error');
@@ -459,8 +577,16 @@
       showMsg('msg3', t('errUsername'), 'error');
       return;
     }
+    if (!usernameIsAvailable) {
+      showMsg('msg3', t('errUsernameTaken'), 'error');
+      return;
+    }
     if (!password || password.length < 6) {
       showMsg('msg3', t('errPassword'), 'error');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showMsg('msg3', t('errConfirmPassword'), 'error');
       return;
     }
     if (!selectedRole) {
