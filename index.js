@@ -172,6 +172,13 @@ app.post('/api/verify-otp', async (req, res) => {
 
 // ============ إنشاء الحساب النهائي ============
 
+const { createClient } = require('@supabase/supabase-js');
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 app.post('/api/complete-registration', async (req, res) => {
   const { phone, full_name, role } = req.body;
 
@@ -204,7 +211,16 @@ app.post('/api/complete-registration', async (req, res) => {
       return res.status(409).json({ success: false, error: 'يوجد حساب مسجل بهذا الرقم مسبقاً' });
     }
 
-    const newId = crypto.randomUUID();
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      phone: '+' + phone,
+      phone_confirm: true
+    });
+
+    if (authError) {
+      return res.status(500).json({ success: false, error: 'فشل إنشاء حساب المصادقة: ' + authError.message });
+    }
+
+    const newId = authData.user.id;
 
     await pool.query(
       `INSERT INTO profiles (id, role, full_name, phone, is_phone_verified, is_active, created_at, updated_at)
@@ -218,6 +234,7 @@ app.post('/api/complete-registration', async (req, res) => {
     res.status(500).json({ success: false, error: 'فشل إنشاء الحساب: ' + err.message });
   }
 });
+
 
 // ============ نظام SMS Gateway عبر Polling ============
 
