@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول / Connexion</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #fff;
+    width: 100%;
+    max-width: 420px;
+    margin: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 30px 24px;
+  }
+  .lang-switch {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .lang-switch button {
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+  }
+  .lang-switch button.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 20px;
+    text-align: center;
+    color: #1f2937;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #374151;
+  }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 15px;
+    margin-bottom: 16px;
+    outline: none;
+  }
+  input:focus {
+    border-color: #2563eb;
+  }
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.primary:disabled {
+    background: #93c5fd;
+    cursor: not-allowed;
+  }
+  button.primary:hover:not(:disabled) {
+    background: #1d4ed8;
+  }
+  .msg {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .msg.success {
+    background: #dcfce7;
+    color: #166534;
+    display: block;
+  }
+  .msg.error {
+    background: #fee2e2;
+    color: #991b1b;
+    display: block;
+  }
+  .step {
+    display: none;
+  }
+  .step.active {
+    display: block;
+  }
+  .success-icon {
+    text-align: center;
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  .register-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .register-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .role-badge {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="lang-switch">
+    <button id="btn-ar" class="active" onclick="setLang('ar')">العربية</button>
+    <button id="btn-fr" onclick="setLang('fr')">Français</button>
+  </div>
+
+  <h1 data-i18n="title">تسجيل الدخول</h1>
+
+  <!-- خطوة الدخول -->
+  <div id="step1" class="step active">
+    <label data-i18n="usernameLabel">اسم المستخدم</label>
+    <input type="text" id="usernameInput" placeholder="mohamed_ahmed" autocapitalize="none" />
+
+    <label data-i18n="passwordLabel">كلمة المرور</label>
+    <input type="password" id="passwordInput" placeholder="••••••••" />
+
+    <button class="primary" id="loginBtn" onclick="login()">
+      <span data-i18n="loginBtn">تسجيل الدخول</span>
+    </button>
+    <div id="msg1" class="msg"></div>
+
+    <div class="register-link">
+      <span data-i18n="noAccountText">ليس لديك حساب؟</span>
+      <a href="register.html" data-i18n="registerLink">أنشئ حساباً</a>
+    </div>
+  </div>
+
+  <!-- خطوة النجاح -->
+  <div id="step2" class="step">
+    <div class="success-icon">✅</div>
+    <h1 id="welcomeTitle">مرحباً بعودتك</h1>
+    <div id="roleBadge" class="role-badge" style="display:block;text-align:center;margin-left:auto;margin-right:auto;width:fit-content;"></div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let currentLang = 'ar';
+
+  const translations = {
+    ar: {
+      title: 'تسجيل الدخول',
+      usernameLabel: 'اسم المستخدم',
+      passwordLabel: 'كلمة المرور',
+      loginBtn: 'تسجيل الدخول',
+      noAccountText: 'ليس لديك حساب؟',
+      registerLink: 'أنشئ حساباً',
+      loggingIn: 'جارٍ الدخول...',
+      errFields: 'الرجاء إدخال اسم المستخدم وكلمة المرور',
+      welcomeBack: 'مرحباً بعودتك',
+      roleBuyer: 'حساب مشترٍ',
+      roleSupplier: 'حساب مورّد'
+    },
+    fr: {
+      title: 'Connexion',
+      usernameLabel: "Nom d'utilisateur",
+      passwordLabel: 'Mot de passe',
+      loginBtn: 'Se connecter',
+      noAccountText: "Vous n'avez pas de compte ?",
+      registerLink: 'Créer un compte',
+      loggingIn: 'Connexion en cours...',
+      errFields: "Veuillez entrer votre nom d'utilisateur et mot de passe",
+      welcomeBack: 'Bon retour',
+      roleBuyer: 'Compte Acheteur',
+      roleSupplier: 'Compte Fournisseur'
+    }
+  };
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+    document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[lang][key]) {
+        el.textContent = translations[lang][key];
+      }
+    });
+  }
+
+  function t(key) {
+    return translations[currentLang][key];
+  }
+
+  function showMsg(elId, text, type) {
+    const el = document.getElementById(elId);
+    el.textContent = text;
+    el.className = 'msg ' + type;
+  }
+
+  async function login() {
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+
+    if (!username || !password) {
+      showMsg('msg1', t('errFields'), 'error');
+      return;
+    }
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = t('loggingIn');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const profile = data.profile;
+        document.getElementById('welcomeTitle').textContent = `${t('welcomeBack')}، ${profile.full_name}`;
+        document.getElementById('roleBadge').textContent = profile.role === 'buyer' ? t('roleBuyer') : t('roleSupplier');
+
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+
+        // يمكن حفظ بيانات الجلسة هنا لاحقاً (localStorage أو توجيه لصفحة أخرى)
+        // مثال: window.location.href = profile.role === 'supplier' ? '/supplier-dashboard.html' : '/buyer-home.html';
+      } else {
+        showMsg('msg1', data.error || 'Error', 'error');
+      }
+    } catch (err) {
+      showMsg('msg1', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-i18n="loginBtn">${t('loginBtn')}</span>`;
+    }
+  }
+
+  setLang('ar');
+</script>
+
+</body>
+</html>
