@@ -57,7 +57,7 @@
     margin-bottom: 6px;
     color: #374151;
   }
-  input {
+  input[type="text"], input[type="tel"], input[type="password"] {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid #d1d5db;
@@ -112,6 +112,11 @@
   .msg.error {
     background: #fee2e2;
     color: #991b1b;
+    display: block;
+  }
+  .msg.info {
+    background: #fef3c7;
+    color: #92400e;
     display: block;
   }
   .msg a {
@@ -188,6 +193,37 @@
     text-decoration: none;
     font-weight: 600;
   }
+  .supplier-section {
+    display: none;
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .supplier-section.active {
+    display: block;
+  }
+  .supplier-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 10px;
+  }
+  input[type="file"] {
+    width: 100%;
+    font-size: 13px;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 4px;
+  }
+  .file-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 14px;
+  }
 </style>
 </head>
 <body>
@@ -229,7 +265,7 @@
     <div id="msg2" class="msg"></div>
   </div>
 
-  <!-- الخطوة 3: الاسم، اسم المستخدم، كلمتا المرور، نوع الحساب -->
+  <!-- الخطوة 3: الاسم، اسم المستخدم، كلمتا المرور، نوع الحساب، وثائق المورّد -->
   <div id="step3" class="step">
     <label data-i18n="nameLabel">الاسم الكامل</label>
     <div class="field-wrap">
@@ -266,6 +302,19 @@
       </div>
     </div>
 
+    <!-- قسم وثائق المورّد -->
+    <div id="supplierSection" class="supplier-section">
+      <div class="supplier-section-title" data-i18n="supplierDocsTitle">وثائق العضوية (مطلوبة للمورّدين)</div>
+
+      <label data-i18n="crLabel">السجل التجاري</label>
+      <input type="file" id="crFile" accept="image/*,.pdf" />
+      <div class="file-hint" data-i18n="fileHint">صورة أو PDF، بحد أقصى 5 ميغابايت</div>
+
+      <label data-i18n="receiptLabel">إيصال دفع رسوم الاشتراك</label>
+      <input type="file" id="receiptFile" accept="image/*,.pdf" />
+      <div class="file-hint" data-i18n="fileHint">صورة أو PDF، بحد أقصى 5 ميغابايت</div>
+    </div>
+
     <button class="primary" id="completeBtn" onclick="completeRegistration()">
       <span data-i18n="completeBtn">إنشاء الحساب</span>
     </button>
@@ -277,6 +326,7 @@
     <div class="success-icon">✅</div>
     <h1 data-i18n="doneTitle">تم إنشاء حسابك بنجاح</h1>
     <div id="msg4" class="msg success" style="display:block;text-align:center;"></div>
+    <div id="pendingMsg" class="msg info" style="display:none;text-align:center;"></div>
     <div class="login-link">
       <a href="login.html" data-i18n="goToLogin">اذهب لتسجيل الدخول</a>
     </div>
@@ -312,6 +362,10 @@
       roleLabel: 'نوع الحساب',
       roleBuyer: 'مشترٍ',
       roleSupplier: 'مورّد',
+      supplierDocsTitle: 'وثائق العضوية (مطلوبة للمورّدين)',
+      crLabel: 'السجل التجاري',
+      receiptLabel: 'إيصال دفع رسوم الاشتراك',
+      fileHint: 'صورة أو PDF، بحد أقصى 5 ميغابايت',
       completeBtn: 'إنشاء الحساب',
       doneTitle: 'تم إنشاء حسابك بنجاح',
       goToLogin: 'اذهب لتسجيل الدخول',
@@ -321,6 +375,7 @@
       otpSent: 'تم إرسال رمز التحقق إلى هاتفك',
       otpVerified: 'تم التحقق بنجاح!',
       accountCreated: 'مرحباً بك في المنصة',
+      pendingSupplierMsg: 'حسابك قيد المراجعة الآن. سنُخطرك فور الموافقة على وثائقك. يمكنك تسجيل الدخول بصلاحيات محدودة في الوقت الحالي.',
       errPhone: 'الرجاء إدخال رقم هاتف صحيح',
       errOtp: 'الرجاء إدخال رمز التحقق المكوّن من 6 أرقام',
       errName: 'الرجاء إدخال الاسم الكامل',
@@ -329,6 +384,8 @@
       errPassword: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
       errConfirmPassword: 'كلمتا المرور غير متطابقتين',
       errRole: 'الرجاء اختيار نوع الحساب',
+      errCrFile: 'الرجاء رفع صورة أو ملف السجل التجاري',
+      errReceiptFile: 'الرجاء رفع إيصال دفع رسوم الاشتراك',
       resendWait: 'يمكنك إعادة الإرسال بعد',
       checking: 'جارٍ التحقق...',
       usernameAvailable: '✓ اسم المستخدم متاح',
@@ -354,6 +411,10 @@
       roleLabel: 'Type de compte',
       roleBuyer: 'Acheteur',
       roleSupplier: 'Fournisseur',
+      supplierDocsTitle: "Documents d'adhésion (requis pour les fournisseurs)",
+      crLabel: 'Registre de commerce',
+      receiptLabel: "Reçu de paiement de l'adhésion",
+      fileHint: 'Image ou PDF, 5 Mo maximum',
       completeBtn: 'Créer le compte',
       doneTitle: 'Compte créé avec succès',
       goToLogin: 'Aller à la connexion',
@@ -363,6 +424,7 @@
       otpSent: 'Le code a été envoyé à votre téléphone',
       otpVerified: 'Vérifié avec succès !',
       accountCreated: 'Bienvenue sur la plateforme',
+      pendingSupplierMsg: 'Votre compte est en cours de vérification. Vous serez notifié dès l\'approbation de vos documents. Vous pouvez vous connecter avec des accès limités pour le moment.',
       errPhone: 'Veuillez entrer un numéro de téléphone valide',
       errOtp: 'Veuillez entrer le code à 6 chiffres',
       errName: 'Veuillez entrer votre nom complet',
@@ -371,6 +433,8 @@
       errPassword: 'Le mot de passe doit contenir au moins 6 caractères',
       errConfirmPassword: 'Les mots de passe ne correspondent pas',
       errRole: 'Veuillez choisir le type de compte',
+      errCrFile: 'Veuillez téléverser le registre de commerce',
+      errReceiptFile: 'Veuillez téléverser le reçu de paiement',
       resendWait: 'Vous pourrez renvoyer le code dans',
       checking: 'Vérification...',
       usernameAvailable: '✓ Disponible',
@@ -426,6 +490,7 @@
     selectedRole = role;
     document.getElementById('role-buyer').classList.toggle('selected', role === 'buyer');
     document.getElementById('role-supplier').classList.toggle('selected', role === 'supplier');
+    document.getElementById('supplierSection').classList.toggle('active', role === 'supplier');
   }
 
   function checkUsername() {
@@ -594,21 +659,43 @@
       return;
     }
 
+    let crFile = null;
+    let receiptFile = null;
+
+    if (selectedRole === 'supplier') {
+      crFile = document.getElementById('crFile').files[0];
+      receiptFile = document.getElementById('receiptFile').files[0];
+
+      if (!crFile) {
+        showMsg('msg3', t('errCrFile'), 'error');
+        return;
+      }
+      if (!receiptFile) {
+        showMsg('msg3', t('errReceiptFile'), 'error');
+        return;
+      }
+    }
+
     const btn = document.getElementById('completeBtn');
     btn.disabled = true;
     btn.textContent = t('creating');
 
     try {
+      const formData = new FormData();
+      formData.append('phone', currentPhone);
+      formData.append('full_name', name);
+      formData.append('role', selectedRole);
+      formData.append('username', username);
+      formData.append('password', password);
+
+      if (selectedRole === 'supplier') {
+        formData.append('commercial_register', crFile);
+        formData.append('payment_receipt', receiptFile);
+      }
+
       const res = await fetch(`${API_BASE}/api/complete-registration`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: currentPhone,
-          full_name: name,
-          role: selectedRole,
-          username: username,
-          password: password
-        })
+        body: formData
       });
       const data = await res.json();
 
@@ -616,6 +703,12 @@
         document.getElementById('step3').classList.remove('active');
         document.getElementById('step4').classList.add('active');
         document.getElementById('msg4').textContent = t('accountCreated');
+
+        if (data.verification_status === 'pending') {
+          const pendingEl = document.getElementById('pendingMsg');
+          pendingEl.style.display = 'block';
+          pendingEl.textContent = t('pendingSupplierMsg');
+        }
       } else {
         showMsg('msg3', data.error || 'Error', 'error');
       }
