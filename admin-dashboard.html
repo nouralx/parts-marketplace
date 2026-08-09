@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم الإدارة</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 0;
+    color: #1f2937;
+  }
+  header {
+    background: #111827;
+    color: #fff;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header .title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  header .user-info {
+    font-size: 13px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  header button {
+    background: #374151;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 18px;
+    font-size: 14px;
+    color: #6b7280;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+  }
+  .tab.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 700;
+  }
+  .content {
+    padding: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .panel {
+    display: none;
+  }
+  .panel.active {
+    display: block;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .card-sub {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .doc-links {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .doc-links a {
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-approve {
+    background: #16a34a;
+    color: #fff;
+  }
+  .btn-reject {
+    background: #dc2626;
+    color: #fff;
+  }
+  .btn-toggle-on {
+    background: #dc2626;
+    color: #fff;
+  }
+  .btn-toggle-off {
+    background: #16a34a;
+    color: #fff;
+  }
+  .empty-state {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge-buyer { background: #eff6ff; color: #1d4ed8; }
+  .badge-supplier { background: #f0fdf4; color: #15803d; }
+  .badge-active { background: #f0fdf4; color: #15803d; }
+  .badge-inactive { background: #fee2e2; color: #991b1b; }
+  .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 30px;
+    font-size: 14px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111827;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: none;
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">🔐 لوحة الإدارة</div>
+  <div class="user-info">
+    <span id="adminName"></span>
+    <button onclick="logout()">خروج</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-suppliers" onclick="switchTab('suppliers')">طلبات الموردين</div>
+  <div class="tab" id="tab-users" onclick="switchTab('users')">المستخدمون</div>
+</div>
+
+<div class="content">
+
+  <!-- طلبات الموردين -->
+  <div id="panel-suppliers" class="panel active">
+    <div id="suppliersLoading" class="loading">جارٍ التحميل...</div>
+    <div id="suppliersList"></div>
+    <div id="suppliersEmpty" class="empty-state" style="display:none;">لا توجد طلبات معلقة حالياً 🎉</div>
+  </div>
+
+  <!-- المستخدمون -->
+  <div id="panel-users" class="panel">
+    <div id="usersLoading" class="loading">جارٍ التحميل...</div>
+    <div id="usersList"></div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const API_BASE = window.location.origin;
+  const token = localStorage.getItem('admin_token');
+
+  if (!token) {
+    window.location.href = 'admin-login.html';
+  }
+
+  document.getElementById('adminName').textContent = localStorage.getItem('admin_name') || '';
+
+  function logout() {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_role');
+    localStorage.removeItem('admin_name');
+    window.location.href = 'admin-login.html';
+  }
+
+  function showToast(text) {
+    const el = document.getElementById('toast');
+    el.textContent = text;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 2500);
+  }
+
+  async function apiCall(path, options = {}) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        'x-admin-token': token,
+        ...(options.headers || {})
+      }
+    });
+
+    if (res.status === 401) {
+      logout();
+      return null;
+    }
+
+    return res.json();
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+
+    if (name === 'suppliers') loadSupplierRequests();
+    if (name === 'users') loadUsers();
+  }
+
+  // ===== طلبات الموردين =====
+
+  async function loadSupplierRequests() {
+    document.getElementById('suppliersLoading').style.display = 'block';
+    document.getElementById('suppliersList').innerHTML = '';
+    document.getElementById('suppliersEmpty').style.display = 'none';
+
+    const data = await apiCall('/api/admin/supplier-requests');
+    document.getElementById('suppliersLoading').style.display = 'none';
+
+    if (!data || !data.success) {
+      showToast(data?.error || 'فشل تحميل الطلبات');
+      return;
+    }
+
+    if (data.requests.length === 0) {
+      document.getElementById('suppliersEmpty').style.display = 'block';
+      return;
+    }
+
+    const listEl = document.getElementById('suppliersList');
+    data.requests.forEach(req => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">${escapeHtml(req.full_name)}</div>
+          <div class="card-sub">${new Date(req.created_at).toLocaleDateString('ar-DZ')}</div>
+        </div>
+        <div class="card-sub">📞 ${escapeHtml(req.phone)} · 👤 ${escapeHtml(req.username)}</div>
+        <div class="doc-links">
+          <a href="#" onclick="viewDocument('${req.commercial_register_url}'); return false;">📄 السجل التجاري</a>
+          <a href="#" onclick="viewDocument('${req.payment_receipt_url}'); return false;">🧾 إيصال الدفع</a>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-approve" onclick="reviewSupplier('${req.id}', 'approved')">✓ موافقة</button>
+          <button class="btn btn-reject" onclick="reviewSupplier('${req.id}', 'rejected')">✗ رفض</button>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  async function viewDocument(path) {
+    const data = await apiCall(`/api/admin/document-url?path=${encodeURIComponent(path)}`);
+    if (data && data.success) {
+      window.open(data.url, '_blank');
+    } else {
+      showToast(data?.error || 'فشل فتح الوثيقة');
+    }
+  }
+
+  async function reviewSupplier(documentId, decision) {
+    const confirmMsg = decision === 'approved' ? 'تأكيد الموافقة على هذا المورّد؟' : 'تأكيد رفض هذا المورّد؟';
+    if (!confirm(confirmMsg)) return;
+
+    const data = await apiCall('/api/admin/review-supplier', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_id: documentId, decision })
+    });
+
+    if (data && data.success) {
+      showToast(decision === 'approved' ? 'تمت الموافقة بنجاح' : 'تم الرفض');
+      loadSupplierRequests();
+    } else {
+      showToast(data?.error || 'فشل تنفيذ الإجراء');
+    }
+  }
+
+  // ===== المستخدمون =====
+
+  async function loadUsers() {
+    document.getElementById('usersLoading').style.display = 'block';
+    document.getElementById('usersList').innerHTML = '';
+
+    const data = await apiCall('/api/admin/users');
+    document.getElementById('usersLoading').style.display = 'none';
+
+    if (!data || !data.success) {
+      showToast(data?.error || 'فشل تحميل المستخدمين');
+      return;
+    }
+
+    const listEl = document.getElementById('usersList');
+    data.users.forEach(u => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const roleBadge = u.role === 'buyer' 
+        ? '<span class="badge badge-buyer">مشترٍ</span>' 
+        : '<span class="badge badge-supplier">مورّد</span>';
+      const statusBadge = u.is_active 
+        ? '<span class="badge badge-active">نشط</span>' 
+        : '<span class="badge badge-inactive">موقوف</span>';
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">${escapeHtml(u.full_name)}</div>
+          <div>${roleBadge}</div>
+        </div>
+        <div class="card-sub">📞 ${escapeHtml(u.phone)} · 👤 ${escapeHtml(u.username)}</div>
+        <div class="card-sub" style="margin-top:6px;">${statusBadge}</div>
+        <div class="action-row">
+          <button class="btn ${u.is_active ? 'btn-toggle-on' : 'btn-toggle-off'}" 
+                  onclick="toggleUserStatus('${u.id}', ${!u.is_active})">
+            ${u.is_active ? '⛔ تعطيل الحساب' : '✓ تفعيل الحساب'}
+          </button>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  async function toggleUserStatus(userId, newStatus) {
+    const confirmMsg = newStatus ? 'تفعيل هذا الحساب؟' : 'تعطيل هذا الحساب؟';
+    if (!confirm(confirmMsg)) return;
+
+    const data = await apiCall('/api/admin/toggle-user-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, is_active: newStatus })
+    });
+
+    if (data && data.success) {
+      showToast('تم التحديث بنجاح');
+      loadUsers();
+    } else {
+      showToast(data?.error || 'فشل تنفيذ الإجراء');
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
+  // تحميل أولي
+  loadSupplierRequests();
+</script>
+
+</body>
+</html>
