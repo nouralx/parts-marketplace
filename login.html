@@ -138,13 +138,41 @@
   }
   .role-badge {
     display: inline-block;
-    background: #eff6ff;
-    color: #1d4ed8;
     padding: 4px 12px;
     border-radius: 999px;
     font-size: 13px;
     font-weight: 600;
     margin-top: 8px;
+  }
+  .role-badge.role-buyer {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+  .role-badge.role-supplier {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+  .status-banner {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    text-align: right;
+    line-height: 1.7;
+    display: none;
+  }
+  .status-banner.pending {
+    background: #fef3c7;
+    color: #92400e;
+    display: block;
+  }
+  .status-banner.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+    display: block;
+  }
+  .status-icon {
+    font-size: 18px;
   }
 </style>
 </head>
@@ -186,6 +214,11 @@
     <div class="success-icon">✅</div>
     <h1 id="welcomeTitle">مرحباً بعودتك</h1>
     <div id="roleBadge" class="role-badge" style="display:block;text-align:center;margin-left:auto;margin-right:auto;width:fit-content;"></div>
+
+    <div id="statusBanner" class="status-banner">
+      <span class="status-icon" id="statusIcon"></span>
+      <span id="statusText"></span>
+    </div>
   </div>
 </div>
 
@@ -206,7 +239,9 @@
       errFields: 'الرجاء إدخال اسم المستخدم وكلمة المرور',
       welcomeBack: 'مرحباً بعودتك',
       roleBuyer: 'حساب مشترٍ',
-      roleSupplier: 'حساب مورّد'
+      roleSupplier: 'حساب مورّد',
+      pendingStatus: 'حسابك قيد المراجعة حالياً. لن تتمكن من عرض منتجاتك أو استخدام كامل ميزات المورّد حتى تتم الموافقة على وثائقك من قِبل الإدارة.',
+      rejectedStatus: 'للأسف، لم تتم الموافقة على وثائقك. الرجاء التواصل مع الدعم لمعرفة التفاصيل وإعادة رفع الوثائق الصحيحة.'
     },
     fr: {
       title: 'Connexion',
@@ -220,7 +255,9 @@
       errFields: "Veuillez entrer votre nom d'utilisateur et mot de passe",
       welcomeBack: 'Bon retour',
       roleBuyer: 'Compte Acheteur',
-      roleSupplier: 'Compte Fournisseur'
+      roleSupplier: 'Compte Fournisseur',
+      pendingStatus: "Votre compte est actuellement en cours de vérification. Vous ne pourrez pas afficher vos produits ni utiliser toutes les fonctionnalités fournisseur tant que vos documents n'auront pas été approuvés.",
+      rejectedStatus: "Malheureusement, vos documents n'ont pas été approuvés. Veuillez contacter le support pour plus de détails et soumettre à nouveau les documents corrects."
     }
   };
 
@@ -273,10 +310,32 @@
       if (data.success) {
         const profile = data.profile;
         document.getElementById('welcomeTitle').textContent = `${t('welcomeBack')}، ${profile.full_name}`;
-        document.getElementById('roleBadge').textContent = profile.role === 'buyer' ? t('roleBuyer') : t('roleSupplier');
+
+        const badgeEl = document.getElementById('roleBadge');
+        badgeEl.textContent = profile.role === 'buyer' ? t('roleBuyer') : t('roleSupplier');
+        badgeEl.className = 'role-badge role-' + profile.role;
+
+        const bannerEl = document.getElementById('statusBanner');
+        const iconEl = document.getElementById('statusIcon');
+        const textEl = document.getElementById('statusText');
+
+        if (profile.role === 'supplier' && profile.verification_status === 'pending') {
+          bannerEl.className = 'status-banner pending';
+          iconEl.textContent = '⏳';
+          textEl.textContent = t('pendingStatus');
+        } else if (profile.role === 'supplier' && profile.verification_status === 'rejected') {
+          bannerEl.className = 'status-banner rejected';
+          iconEl.textContent = '⚠️';
+          textEl.textContent = t('rejectedStatus');
+        } else {
+          bannerEl.className = 'status-banner';
+        }
 
         document.getElementById('step1').classList.remove('active');
         document.getElementById('step2').classList.add('active');
+
+        // يمكن حفظ بيانات الجلسة هنا لاحقاً (localStorage أو توجيه لصفحة أخرى)
+        // مثال: window.location.href = profile.role === 'supplier' ? '/supplier-dashboard.html' : '/buyer-home.html';
       } else {
         showMsg('msg1', data.error || 'Error', 'error');
       }
