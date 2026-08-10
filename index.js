@@ -409,46 +409,6 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// ============ إعداد أول حساب أدمن (مؤقت - يُحذف بعد الاستخدام مرة واحدة) ============
-
-app.post('/api/setup-first-admin', async (req, res) => {
-  const { setup_key, username, password, full_name } = req.body;
-
-  if (setup_key !== process.env.ADMIN_SETUP_KEY) {
-    return res.status(403).json({ success: false, error: 'Unauthorized' });
-  }
-
-  try {
-    const existingAdmin = await pool.query(`SELECT id FROM profiles WHERE role = 'admin' LIMIT 1`);
-    if (existingAdmin.rows.length > 0) {
-      return res.status(409).json({ success: false, error: 'يوجد أدمن بالفعل' });
-    }
-
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      phone: '+213000000000',
-      phone_confirm: true
-    });
-
-    if (authError) {
-      return res.status(500).json({ success: false, error: authError.message });
-    }
-
-    const newId = authData.user.id;
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    await pool.query(
-      `INSERT INTO profiles (id, role, full_name, username, password_hash, is_active, verification_status, created_at, updated_at)
-       VALUES ($1, 'admin', $2, $3, $4, true, 'approved', NOW(), NOW())`,
-      [newId, full_name, username, passwordHash]
-    );
-
-    res.json({ success: true, message: 'تم إنشاء حساب الأدمن' });
-
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // ============ نظام جلسات الأدمن/الموظفين ============
 
 function generateToken() {
