@@ -96,6 +96,7 @@
     display: flex;
     gap: 8px;
     margin: 10px 0;
+    flex-wrap: wrap;
   }
   .doc-links a {
     background: #eff6ff;
@@ -172,6 +173,31 @@
     display: none;
     z-index: 100;
   }
+  .product-images-row {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0;
+    overflow-x: auto;
+  }
+  .product-images-row img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .price-tag {
+    display: inline-block;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .price-tag b {
+    font-size: 16px;
+    color: #1d4ed8;
+  }
 </style>
 </head>
 <body>
@@ -186,6 +212,8 @@
 
 <div class="tabs">
   <div class="tab active" id="tab-suppliers" onclick="switchTab('suppliers')">طلبات الموردين</div>
+  <div class="tab" id="tab-products" onclick="switchTab('products')">المنتجات</div>
+  <div class="tab" id="tab-pricing" onclick="switchTab('pricing')">الأسعار</div>
   <div class="tab" id="tab-users" onclick="switchTab('users')">المستخدمون</div>
 </div>
 
@@ -196,6 +224,20 @@
     <div id="suppliersLoading" class="loading">جارٍ التحميل...</div>
     <div id="suppliersList"></div>
     <div id="suppliersEmpty" class="empty-state" style="display:none;">لا توجد طلبات معلقة حالياً 🎉</div>
+  </div>
+
+  <!-- المنتجات -->
+  <div id="panel-products" class="panel">
+    <div id="productsLoading" class="loading">جارٍ التحميل...</div>
+    <div id="productsList"></div>
+    <div id="productsEmpty" class="empty-state" style="display:none;">لا توجد منتجات بانتظار الموافقة 🎉</div>
+  </div>
+
+  <!-- الأسعار -->
+  <div id="panel-pricing" class="panel">
+    <div id="pricingLoading" class="loading">جارٍ التحميل...</div>
+    <div id="pricingList"></div>
+    <div id="pricingEmpty" class="empty-state" style="display:none;">لا توجد أسعار بانتظار الموافقة 🎉</div>
   </div>
 
   <!-- المستخدمون -->
@@ -232,6 +274,12 @@
     setTimeout(() => { el.style.display = 'none'; }, 2500);
   }
 
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
   async function apiCall(path, options = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
@@ -256,6 +304,8 @@
     document.getElementById('panel-' + name).classList.add('active');
 
     if (name === 'suppliers') loadSupplierRequests();
+    if (name === 'products') loadPendingProducts();
+    if (name === 'pricing') loadPendingPricing();
     if (name === 'users') loadUsers();
   }
 
@@ -329,6 +379,129 @@
     }
   }
 
+  // ===== المنتجات المعلقة =====
+
+  async function loadPendingProducts() {
+    document.getElementById('productsLoading').style.display = 'block';
+    document.getElementById('productsList').innerHTML = '';
+    document.getElementById('productsEmpty').style.display = 'none';
+
+    const data = await apiCall('/api/admin/pending-products');
+    document.getElementById('productsLoading').style.display = 'none';
+
+    if (!data || !data.success) {
+      showToast(data?.error || 'فشل تحميل المنتجات');
+      return;
+    }
+
+    if (data.products.length === 0) {
+      document.getElementById('productsEmpty').style.display = 'block';
+      return;
+    }
+
+    const listEl = document.getElementById('productsList');
+    data.products.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const imagesHtml = (p.images || []).map(url => `<img src="${url}" onclick="window.open('${url}','_blank')" />`).join('');
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">${escapeHtml(p.name)}</div>
+          <div class="card-sub">${new Date(p.created_at).toLocaleDateString('ar-DZ')}</div>
+        </div>
+        <div class="card-sub">🏬 ${escapeHtml(p.store_name)} · 👤 ${escapeHtml(p.full_name)} · 📞 ${escapeHtml(p.phone)}</div>
+        <div class="card-sub" style="margin-top:6px;">${escapeHtml(p.category || '')} · الحالة: ${escapeHtml(p.condition)} · المخزون: ${p.stock_quantity}</div>
+        ${p.description ? `<div class="card-sub" style="margin-top:6px;">${escapeHtml(p.description)}</div>` : ''}
+        ${p.oem_number ? `<div class="card-sub">رقم OEM: ${escapeHtml(p.oem_number)}</div>` : ''}
+        <div class="product-images-row">${imagesHtml}</div>
+        <div class="action-row">
+          <button class="btn btn-approve" onclick="reviewProduct(${p.id}, 'approved')">✓ موافقة</button>
+          <button class="btn btn-reject" onclick="reviewProduct(${p.id}, 'rejected')">✗ رفض</button>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  async function reviewProduct(productId, decision) {
+    const confirmMsg = decision === 'approved' ? 'تأكيد الموافقة على هذا المنتج؟' : 'تأكيد رفض هذا المنتج؟';
+    if (!confirm(confirmMsg)) return;
+
+    const data = await apiCall('/api/admin/review-product', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: productId, decision })
+    });
+
+    if (data && data.success) {
+      showToast(decision === 'approved' ? 'تمت الموافقة بنجاح' : 'تم الرفض');
+      loadPendingProducts();
+    } else {
+      showToast(data?.error || 'فشل تنفيذ الإجراء');
+    }
+  }
+
+  // ===== الأسعار المعلقة =====
+
+  async function loadPendingPricing() {
+    document.getElementById('pricingLoading').style.display = 'block';
+    document.getElementById('pricingList').innerHTML = '';
+    document.getElementById('pricingEmpty').style.display = 'none';
+
+    const data = await apiCall('/api/admin/pending-pricing');
+    document.getElementById('pricingLoading').style.display = 'none';
+
+    if (!data || !data.success) {
+      showToast(data?.error || 'فشل تحميل الأسعار');
+      return;
+    }
+
+    if (data.pricing.length === 0) {
+      document.getElementById('pricingEmpty').style.display = 'block';
+      return;
+    }
+
+    const listEl = document.getElementById('pricingList');
+    data.pricing.forEach(pr => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">${escapeHtml(pr.product_name)}</div>
+          <div class="card-sub">${new Date(pr.created_at).toLocaleDateString('ar-DZ')}</div>
+        </div>
+        <div class="card-sub">🏬 ${escapeHtml(pr.store_name)}</div>
+        <div class="card-sub" style="margin-top:6px;">🚗 ${escapeHtml(pr.make)} ${escapeHtml(pr.model)} (${pr.year_start}-${pr.year_end})</div>
+        <div class="price-tag">السعر المقترح: <b>${pr.price}</b> دج</div>
+        <div class="action-row">
+          <button class="btn btn-approve" onclick="reviewPricing(${pr.id}, 'approved')">✓ موافقة</button>
+          <button class="btn btn-reject" onclick="reviewPricing(${pr.id}, 'rejected')">✗ رفض</button>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  async function reviewPricing(pricingId, decision) {
+    const confirmMsg = decision === 'approved' ? 'تأكيد الموافقة على هذا السعر؟' : 'تأكيد رفض هذا السعر؟';
+    if (!confirm(confirmMsg)) return;
+
+    const data = await apiCall('/api/admin/review-pricing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pricing_id: pricingId, decision })
+    });
+
+    if (data && data.success) {
+      showToast(decision === 'approved' ? 'تمت الموافقة بنجاح' : 'تم الرفض');
+      loadPendingPricing();
+    } else {
+      showToast(data?.error || 'فشل تنفيذ الإجراء');
+    }
+  }
+
   // ===== المستخدمون =====
 
   async function loadUsers() {
@@ -388,12 +561,6 @@
     } else {
       showToast(data?.error || 'فشل تنفيذ الإجراء');
     }
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.innerHTML;
   }
 
   // تحميل أولي
