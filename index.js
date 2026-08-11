@@ -189,7 +189,7 @@ app.post('/api/verify-otp', async (req, res) => {
     const result = await pool.query(
       `SELECT * FROM otp_verifications 
        WHERE phone = $1 AND otp_code = $2 AND is_verified = false
-       ORDER BY created_at DESC LIMIT 1`,
+       ORDER BY crاةted_at DESC LIMIT 1`,
       [phone, otp_code]
     );
 
@@ -482,6 +482,28 @@ app.get('/api/vehicles', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+// ============ الماركة، الطراز، وسنوات الصنع مطلوبة ============
+
+app.post('/api/vehicles', checkUserAuth, async (req, res) => {
+  const { make, model, year_start, year_end, body_type } = req.body;
+
+  if (!make || !model || !year_start || !year_end) {
+    return res.status(400).json({ success: false, error: 'الماركة، الطراز، وسنوات الصنع مطلوبة' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO vehicles_reference (make, model, year_start, year_end, body_type, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING id, make, model, year_start, year_end, body_type`,
+      [make, model, parseInt(year_start), parseInt(year_end), body_type || null]
+    );
+    res.json({ success: true, vehicle: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // ============ منتجات المورّد ============
 
