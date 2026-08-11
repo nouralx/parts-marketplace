@@ -57,15 +57,16 @@
     margin-bottom: 6px;
     color: #374151;
   }
-  input[type="text"], input[type="tel"], input[type="password"] {
+  input[type="text"], input[type="tel"], input[type="password"], select {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid #d1d5db;
     border-radius: 10px;
     font-size: 15px;
     outline: none;
+    background: #fff;
   }
-  input:focus {
+  input:focus, select:focus {
     border-color: #2563eb;
   }
   .field-wrap {
@@ -302,9 +303,55 @@
       </div>
     </div>
 
-    <!-- قسم وثائق المورّد -->
+    <!-- قسم بيانات ووثائق المورّد -->
     <div id="supplierSection" class="supplier-section">
-      <div class="supplier-section-title" data-i18n="supplierDocsTitle">وثائق العضوية (مطلوبة للمورّدين)</div>
+      <div class="supplier-section-title" data-i18n="supplierInfoTitle">بيانات المتجر</div>
+
+      <label data-i18n="storeNameLabel">اسم المتجر</label>
+      <div class="field-wrap">
+        <input type="text" id="storeNameInput" placeholder="متجر قطع الغيار الحديث" />
+      </div>
+
+      <label data-i18n="wilayaLabel">الولاية</label>
+      <div class="field-wrap">
+        <select id="wilayaInput">
+          <option value="">-- اختر الولاية --</option>
+          <option value="أدرار">01 - أدرار</option>
+          <option value="الشلف">02 - الشلف</option>
+          <option value="الأغواط">03 - الأغواط</option>
+          <option value="أم البواقي">04 - أم البواقي</option>
+          <option value="باتنة">05 - باتنة</option>
+          <option value="بجاية">06 - بجاية</option>
+          <option value="بسكرة">07 - بسكرة</option>
+          <option value="بشار">08 - بشار</option>
+          <option value="البليدة">09 - البليدة</option>
+          <option value="البويرة">10 - البويرة</option>
+          <option value="تمنراست">11 - تمنراست</option>
+          <option value="تبسة">12 - تبسة</option>
+          <option value="تلمسان">13 - تلمسان</option>
+          <option value="تيارت">14 - تيارت</option>
+          <option value="تيزي وزو">15 - تيزي وزو</option>
+          <option value="الجزائر">16 - الجزائر</option>
+          <option value="الجلفة">17 - الجلفة</option>
+          <option value="جيجل">18 - جيجل</option>
+          <option value="سطيف">19 - سطيف</option>
+          <option value="سعيدة">20 - سعيدة</option>
+          <option value="سكيكدة">21 - سكيكدة</option>
+          <option value="سيدي بلعباس">22 - سيدي بلعباس</option>
+          <option value="عنابة">23 - عنابة</option>
+          <option value="قالمة">24 - قالمة</option>
+          <option value="قسنطينة">25 - قسنطينة</option>
+          <option value="المدية">26 - المدية</option>
+          <option value="مستغانم">27 - مستغانم</option>
+          <option value="المسيلة">28 - المسيلة</option>
+          <option value="معسكر">29 - معسكر</option>
+          <option value="ورقلة">30 - ورقلة</option>
+          <option value="وهران">31 - وهران</option>
+          <option value="أخرى">أخرى</option>
+        </select>
+      </div>
+
+      <div class="supplier-section-title" data-i18n="supplierDocsTitle" style="margin-top:14px;">وثائق العضوية</div>
 
       <label data-i18n="crLabel">السجل التجاري</label>
       <input type="file" id="crFile" accept="image/*,.pdf" />
@@ -362,7 +409,10 @@
       roleLabel: 'نوع الحساب',
       roleBuyer: 'مشترٍ',
       roleSupplier: 'مورّد',
-      supplierDocsTitle: 'وثائق العضوية (مطلوبة للمورّدين)',
+      supplierInfoTitle: 'بيانات المتجر',
+      storeNameLabel: 'اسم المتجر',
+      wilayaLabel: 'الولاية',
+      supplierDocsTitle: 'وثائق العضوية',
       crLabel: 'السجل التجاري',
       receiptLabel: 'إيصال دفع رسوم الاشتراك',
       fileHint: 'صورة أو PDF، بحد أقصى 5 ميغابايت',
@@ -384,6 +434,8 @@
       errPassword: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
       errConfirmPassword: 'كلمتا المرور غير متطابقتين',
       errRole: 'الرجاء اختيار نوع الحساب',
+      errStoreName: 'الرجاء إدخال اسم المتجر',
+      errWilaya: 'الرجاء اختيار الولاية',
       errCrFile: 'الرجاء رفع صورة أو ملف السجل التجاري',
       errReceiptFile: 'الرجاء رفع إيصال دفع رسوم الاشتراك',
       resendWait: 'يمكنك إعادة الإرسال بعد',
@@ -411,7 +463,10 @@
       roleLabel: 'Type de compte',
       roleBuyer: 'Acheteur',
       roleSupplier: 'Fournisseur',
-      supplierDocsTitle: "Documents d'adhésion (requis pour les fournisseurs)",
+      supplierInfoTitle: 'Informations du magasin',
+      storeNameLabel: 'Nom du magasin',
+      wilayaLabel: 'Wilaya',
+      supplierDocsTitle: "Documents d'adhésion",
       crLabel: 'Registre de commerce',
       receiptLabel: "Reçu de paiement de l'adhésion",
       fileHint: 'Image ou PDF, 5 Mo maximum',
@@ -433,6 +488,8 @@
       errPassword: 'Le mot de passe doit contenir au moins 6 caractères',
       errConfirmPassword: 'Les mots de passe ne correspondent pas',
       errRole: 'Veuillez choisir le type de compte',
+      errStoreName: 'Veuillez entrer le nom du magasin',
+      errWilaya: 'Veuillez choisir la wilaya',
       errCrFile: 'Veuillez téléverser le registre de commerce',
       errReceiptFile: 'Veuillez téléverser le reçu de paiement',
       resendWait: 'Vous pourrez renvoyer le code dans',
@@ -659,13 +716,25 @@
       return;
     }
 
+    let storeName = '';
+    let wilaya = '';
     let crFile = null;
     let receiptFile = null;
 
     if (selectedRole === 'supplier') {
+      storeName = document.getElementById('storeNameInput').value.trim();
+      wilaya = document.getElementById('wilayaInput').value;
       crFile = document.getElementById('crFile').files[0];
       receiptFile = document.getElementById('receiptFile').files[0];
 
+      if (!storeName) {
+        showMsg('msg3', t('errStoreName'), 'error');
+        return;
+      }
+      if (!wilaya) {
+        showMsg('msg3', t('errWilaya'), 'error');
+        return;
+      }
       if (!crFile) {
         showMsg('msg3', t('errCrFile'), 'error');
         return;
@@ -689,6 +758,8 @@
       formData.append('password', password);
 
       if (selectedRole === 'supplier') {
+        formData.append('store_name', storeName);
+        formData.append('wilaya', wilaya);
         formData.append('commercial_register', crFile);
         formData.append('payment_receipt', receiptFile);
       }
