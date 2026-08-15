@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إضافة عروض المتجر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17181a; --panel:#1f2023; --panel-raised:#26282c;
+    --amber:#e3963e; --amber-dim:#8a5c26; --steel:#5c7c99;
+    --green:#5f9e6f; --red:#c0605a;
+    --text:#f2efe9; --text-muted:#93938d;
+    --line:#34353a; --line-bright:#46484e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+    padding-bottom:40px;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:plaintext;}
+  a{color:inherit; text-decoration:none;}
+  button, input, select, textarea{font-family:inherit;}
+
+  header{
+    padding:18px 18px 14px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:50;
+    background:rgba(23,24,26,0.94);
+    backdrop-filter:blur(8px);
+  }
+  header h1{font-family:'Changa', sans-serif; font-size:19px; font-weight:700;}
+  header p{font-size:12.5px; color:var(--text-muted); margin-top:3px;}
+
+  .tabs{display:flex; gap:6px; padding:14px 18px 0;}
+  .tab{
+    flex:1; text-align:center;
+    padding:10px 8px;
+    font-size:12.5px; font-weight:600;
+    border:1px solid var(--line-bright);
+    border-radius:6px;
+    color:var(--text-muted);
+    cursor:pointer;
+  }
+  .tab.active{border-color:var(--amber); color:var(--amber); background:rgba(227,150,62,0.08);}
+
+  .panel{display:none; padding:18px;}
+  .panel.active{display:block;}
+
+  /* بحث */
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel); border:1px solid var(--line-bright);
+    border-radius:6px; padding:10px 14px;
+  }
+  .search-box input{
+    flex:1; background:transparent; border:none; outline:none;
+    color:var(--text); font-size:14px;
+  }
+  .search-box svg{stroke:var(--text-muted); flex-shrink:0;}
+
+  .result-list{margin-top:14px; display:flex; flex-direction:column; gap:10px;}
+  .result-card{
+    display:flex; gap:12px; align-items:center;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:10px;
+  }
+  .result-img{
+    width:52px; height:52px; border-radius:6px; flex-shrink:0;
+    background:var(--panel-raised); overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--line-bright);
+  }
+  .result-img img{width:100%; height:100%; object-fit:cover;}
+  .result-mid{flex:1; min-width:0;}
+  .result-name{font-size:13.5px; font-weight:600; margin-bottom:2px;}
+  .result-oem{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--text-muted);}
+  .mini-btn{
+    font-size:12px; font-weight:600;
+    background:var(--amber); color:#1a1408;
+    border:none; border-radius:5px;
+    padding:8px 12px; white-space:nowrap; flex-shrink:0;
+  }
+
+  .propose-cta{
+    margin-top:18px; text-align:center;
+    padding:18px; border:1px dashed var(--line-bright);
+    border-radius:8px;
+  }
+  .propose-cta p{font-size:12.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.7;}
+  .btn-outline{
+    display:inline-block; font-size:13px; font-weight:600;
+    border:1px solid var(--amber); color:var(--amber);
+    padding:9px 20px; border-radius:6px; background:transparent; cursor:pointer;
+  }
+
+  /* نماذج */
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px;}
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    width:100%; background:var(--panel); border:1px solid var(--line-bright);
+    border-radius:6px; padding:11px 12px; color:var(--text); font-size:14px; outline:none;
+  }
+  .field textarea{resize:vertical; min-height:70px;}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--amber);}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  .file-drop{
+    border:1.5px dashed var(--line-bright); border-radius:8px;
+    padding:22px; text-align:center; cursor:pointer;
+    color:var(--text-muted); font-size:12.5px;
+  }
+  .file-drop.has-files{border-color:var(--amber); color:var(--amber);}
+  .file-preview{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .file-preview img{width:56px; height:56px; object-fit:cover; border-radius:5px; border:1px solid var(--line);}
+
+  .submit-btn{
+    width:100%; background:var(--amber); color:#1a1408;
+    border:none; border-radius:6px; padding:14px;
+    font-weight:700; font-size:15px; margin-top:6px;
+  }
+  .submit-btn:disabled{background:var(--line-bright); color:var(--text-muted);}
+
+  .form-msg{
+    margin-top:12px; padding:10px 14px; border-radius:6px; font-size:13px; display:none;
+  }
+  .form-msg.success{display:block; background:rgba(95,158,111,0.12); border:1px solid var(--green); color:var(--green);}
+  .form-msg.error{display:block; background:rgba(192,96,90,0.12); border:1px solid var(--red); color:var(--red);}
+
+  /* اقتراح منتج جديد - عرض/إخفاء */
+  #proposeForm, #listingForm{display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);}
+  #proposeForm.open, #listingForm.open{display:block;}
+
+  .selected-product{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel-raised); border:1px solid var(--amber-dim);
+    border-radius:6px; padding:10px 12px; margin-bottom:14px;
+  }
+  .selected-product img{width:40px; height:40px; border-radius:5px; object-fit:cover;}
+  .selected-product .n{font-size:13px; font-weight:600;}
+  .selected-product .change{margin-right:auto; font-size:11px; color:var(--amber); cursor:pointer;}
+
+  /* عروضي */
+  .listing-card{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:12px 14px; margin-bottom:10px;
+  }
+  .listing-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;}
+  .listing-name{font-size:13.5px; font-weight:600;}
+  .listing-veh{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
+  .status-pill{
+    font-size:10px; font-family:'IBM Plex Mono', monospace;
+    padding:3px 9px; border-radius:20px; white-space:nowrap;
+  }
+  .status-pill.pending{background:rgba(227,150,62,0.12); color:var(--amber); border:1px solid var(--amber-dim);}
+  .status-pill.approved{background:rgba(95,158,111,0.12); color:var(--green); border:1px solid var(--green);}
+  .status-pill.rejected{background:rgba(192,96,90,0.12); color:var(--red); border:1px solid var(--red);}
+
+  .listing-bottom{display:flex; justify-content:space-between; align-items:center;}
+  .listing-price{font-family:'IBM Plex Mono', monospace; font-weight:600; color:var(--amber); font-size:14px;}
+
+  .switch{
+    position:relative; width:42px; height:24px; flex-shrink:0;
+  }
+  .switch input{opacity:0; width:0; height:0;}
+  .switch-track{
+    position:absolute; inset:0; background:var(--line-bright);
+    border-radius:20px; cursor:pointer; transition:.2s;
+  }
+  .switch-track::before{
+    content:''; position:absolute; width:18px; height:18px;
+    left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;
+  }
+  .switch input:checked + .switch-track{background:var(--green);}
+  .switch input:checked + .switch-track::before{transform:translateX(-18px);}
+
+  .empty{text-align:center; padding:40px 20px; color:var(--text-muted); font-size:13px;}
+  .loading{text-align:center; padding:30px; color:var(--text-muted); font-size:13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>إضافة عروضك للسوق</h1>
+  <p>ابحث عن قطعتك في كتالوج الموقع، أو اقترح قطعة جديدة إذا ما لقيتهاش</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="add">إضافة عرض</div>
+  <div class="tab" data-tab="mine">عروضي</div>
+</div>
+
+<!-- تبويب: إضافة عرض -->
+<div class="panel active" id="panel-add">
+  <div class="search-box">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="catalogSearch" type="text" placeholder="اسم القطعة أو رقم OEM…">
+  </div>
+
+  <div class="result-list" id="resultList"></div>
+
+  <div class="propose-cta" id="proposeCta">
+    <p>ما لقيتش القطعة تاعك في الكتالوج؟ اقترحها وستضاف بعد موافقة الإدارة</p>
+    <button class="btn-outline" id="openProposeBtn">+ اقتراح منتج جديد</button>
+  </div>
+
+  <!-- نموذج اقتراح منتج جديد -->
+  <div id="proposeForm">
+    <div class="field">
+      <label>اسم المنتج *</label>
+      <input type="text" id="p_name" placeholder="مثال: طقم فحمات فرامل أمامية">
+    </div>
+    <div class="field">
+      <label>الوصف</label>
+      <textarea id="p_description" placeholder="تفاصيل إضافية عن القطعة (اختياري)"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>رقم OEM</label>
+        <input type="text" id="p_oem" placeholder="مثال: 04465-YZZE1" class="mono">
+      </div>
+      <div class="field">
+        <label>التصنيف</label>
+        <select id="p_category">
+          <option value="">اختر...</option>
+          <option value="محرك">محرك</option>
+          <option value="فرامل">فرامل</option>
+          <option value="كهرباء">كهرباء</option>
+          <option value="تعليق">تعليق</option>
+          <option value="هيكل خارجي">هيكل خارجي</option>
+          <option value="أخرى">أخرى</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>صور القطعة (حتى 6 صور) *</label>
+      <div class="file-drop" id="fileDrop">اضغط هنا لاختيار الصور</div>
+      <input type="file" id="p_images" accept="image/*" multiple style="display:none;">
+      <div class="file-preview" id="filePreview"></div>
+    </div>
+    <button class="submit-btn" id="submitProposeBtn">إرسال الاقتراح للمراجعة</button>
+    <div class="form-msg" id="proposeMsg"></div>
+  </div>
+
+  <!-- نموذج إضافة عرض على منتج موجود -->
+  <div id="listingForm">
+    <div class="selected-product" id="selectedProductBox"></div>
+
+    <div class="field">
+      <label>المركبة المتوافقة *</label>
+      <input type="text" id="l_vehicle_search" placeholder="ابحث عن ماركة/طراز المركبة…">
+      <div class="result-list" id="vehicleResults" style="margin-top:8px;"></div>
+      <input type="hidden" id="l_vehicle_id">
+      <div id="selectedVehicleLabel" style="font-size:12.5px;color:var(--amber);margin-top:6px;"></div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>السعر (دج) *</label>
+        <input type="number" id="l_price" placeholder="0">
+      </div>
+      <div class="field">
+        <label>نوعية البضاعة</label>
+        <select id="l_grade">
+          <option value="">غير محدد</option>
+          <option value="grade_1">نوعية 1 - أصلية</option>
+          <option value="grade_2">نوعية 2</option>
+          <option value="economy">اقتصادية</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>الماركة (اختياري)</label>
+        <input type="text" id="l_brand" placeholder="مثال: Bosch">
+      </div>
+      <div class="field">
+        <label>بلد المنشأ (اختياري)</label>
+        <input type="text" id="l_country" placeholder="مثال: ألمانيا">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>طريقة التوصيل</label>
+      <select id="l_delivery">
+        <option value="shipping">يوفّر الشحن</option>
+        <option value="pickup_only">استلام من المحل فقط</option>
+        <option value="both">شحن أو استلام</option>
+      </select>
+    </div>
+
+    <button class="submit-btn" id="submitListingBtn">إرسال العرض للمراجعة</button>
+    <div class="form-msg" id="listingMsg"></div>
+  </div>
+</div>
+
+<!-- تبويب: عروضي -->
+<div class="panel" id="panel-mine">
+  <div id="myListings" class="loading">جارِ التحميل…</div>
+</div>
+
+<script>
+const API_BASE = '';
+const userToken = localStorage.getItem('user_token');
+const userProfile = JSON.parse(localStorage.getItem('user_profile') || 'null');
+
+// ===== حماية الصفحة: للموردين فقط =====
+if(!userToken || !userProfile || userProfile.role !== 'supplier'){
+  window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+}
+
+function authHeaders(){
+  return { 'x-user-token': userToken };
+}
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+// ===== التبويبات =====
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    if(tab.dataset.tab === 'mine') loadMyListings();
+  });
+});
+
+// ===== بحث الكتالوج =====
+const catalogSearch = document.getElementById('catalogSearch');
+const resultList = document.getElementById('resultList');
+let searchDebounce;
+
+catalogSearch.addEventListener('input', () => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(runCatalogSearch, 350);
+});
+
+async function runCatalogSearch(){
+  const q = catalogSearch.value.trim();
+  resultList.innerHTML = `<div class="loading">جارِ البحث…</div>`;
+  try{
+    const params = new URLSearchParams();
+    if(q) params.set('search', q);
+    const res = await fetch(`${API_BASE}/api/catalog/search?${params}`);
+    const data = await res.json();
+    if(!data.success || !data.products.length){
+      resultList.innerHTML = q ? `<div class="empty">لا توجد نتائج مطابقة</div>` : '';
+      return;
+    }
+    resultList.innerHTML = data.products.map(p => {
+      const img = (p.images && p.images[0]) ? `<img src="${p.images[0]}">` : `📦`;
+      return `<div class="result-card">
+        <div class="result-img">${img}</div>
+        <div class="result-mid">
+          <div class="result-name">${escapeHtml(p.name)}</div>
+          <div class="result-oem">${escapeHtml(p.oem_number || '—')}</div>
+        </div>
+        <button class="mini-btn" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-img="${(p.images&&p.images[0])||''}">أضف عرضك</button>
+      </div>`;
+    }).join('');
+
+    resultList.querySelectorAll('.mini-btn').forEach(btn => {
+      btn.addEventListener('click', () => openListingForm(btn.dataset.id, btn.dataset.name, btn.dataset.img));
+    });
+  }catch(err){
+    resultList.innerHTML = `<div class="empty">تعذّر الاتصال بالخادم</div>`;
+  }
+}
+runCatalogSearch();
+
+// ===== نموذج اقتراح منتج جديد =====
+const proposeForm = document.getElementById('proposeForm');
+const listingForm = document.getElementById('listingForm');
+let selectedFiles = [];
+
+document.getElementById('openProposeBtn').addEventListener('click', () => {
+  listingForm.classList.remove('open');
+  proposeForm.classList.toggle('open');
+});
+
+const fileDrop = document.getElementById('fileDrop');
+const fileInput = document.getElementById('p_images');
+fileDrop.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  selectedFiles = Array.from(fileInput.files).slice(0, 6);
+  fileDrop.textContent = selectedFiles.length ? `${selectedFiles.length} صورة مختارة` : 'اضغط هنا لاختيار الصور';
+  fileDrop.classList.toggle('has-files', selectedFiles.length > 0);
+  const preview = document.getElementById('filePreview');
+  preview.innerHTML = selectedFiles.map(f => `<img src="${URL.createObjectURL(f)}">`).join('');
+});
+
+document.getElementById('submitProposeBtn').addEventListener('click', async () => {
+  const name = document.getElementById('p_name').value.trim();
+  const msgEl = document.getElementById('proposeMsg');
+  msgEl.className = 'form-msg';
+
+  if(!name){ msgEl.className='form-msg error'; msgEl.textContent='اسم المنتج مطلوب'; return; }
+  if(selectedFiles.length === 0){ msgEl.className='form-msg error'; msgEl.textContent='يجب اختيار صورة واحدة على الأقل'; return; }
+
+  const btn = document.getElementById('submitProposeBtn');
+  btn.disabled = true; btn.textContent = 'جارِ الإرسال…';
+
+  try{
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('description', document.getElementById('p_description').value.trim());
+    fd.append('oem_number', document.getElementById('p_oem').value.trim());
+    fd.append('category', document.getElementById('p_category').value);
+    selectedFiles.forEach(f => fd.append('images', f));
+
+    const res = await fetch(`${API_BASE}/api/supplier/propose-product`, {
+      method:'POST', headers: authHeaders(), body: fd
+    });
+    const data = await res.json();
+
+    if(data.success){
+      msgEl.className='form-msg success';
+      msgEl.textContent = 'تم إرسال اقتراحك، بانتظار موافقة الإدارة قبل ما تقدر تضيف عرضك عليه';
+      document.getElementById('p_name').value = '';
+      document.getElementById('p_description').value = '';
+      document.getElementById('p_oem').value = '';
+      selectedFiles = []; fileInput.value=''; fileDrop.textContent='اضغط هنا لاختيار الصور'; fileDrop.classList.remove('has-files');
+      document.getElementById('filePreview').innerHTML='';
+    } else {
+      msgEl.className='form-msg error';
+      msgEl.textContent = data.error || 'فشل إرسال الاقتراح';
+    }
+  }catch(err){
+    msgEl.className='form-msg error';
+    msgEl.textContent = 'تعذّر الاتصال بالخادم';
+  }finally{
+    btn.disabled = false; btn.textContent = 'إرسال الاقتراح للمراجعة';
+  }
+});
+
+// ===== نموذج إضافة عرض على منتج موجود =====
+let selectedProductId = null;
+
+function openListingForm(id, name, img){
+  selectedProductId = id;
+  proposeForm.classList.remove('open');
+  listingForm.classList.add('open');
+
+  document.getElementById('selectedProductBox').innerHTML = `
+    ${img ? `<img src="${img}">` : ''}
+    <div class="n">${escapeHtml(name)}</div>
+    <div class="change" id="changeProductBtn">تغيير</div>
+  `;
+  document.getElementById('changeProductBtn').addEventListener('click', () => {
+    listingForm.classList.remove('open');
+  });
+  listingForm.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// بحث المركبة داخل نموذج العرض
+const vehicleSearch = document.getElementById('l_vehicle_search');
+const vehicleResults = document.getElementById('vehicleResults');
+let vehicleDebounce;
+
+vehicleSearch.addEventListener('input', () => {
+  clearTimeout(vehicleDebounce);
+  vehicleDebounce = setTimeout(async () => {
+    const q = vehicleSearch.value.trim();
+    if(!q){ vehicleResults.innerHTML=''; return; }
+    try{
+      const res = await fetch(`${API_BASE}/api/vehicles?search=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if(!data.success || !data.vehicles.length){ vehicleResults.innerHTML = `<div class="empty">لا توجد مركبات مطابقة</div>`; return; }
+      vehicleResults.innerHTML = data.vehicles.map(v =>
+        `<div class="result-card" style="cursor:pointer;" data-id="${v.id}" data-label="${escapeHtml(v.make)} ${escapeHtml(v.model)} (${v.year_start}-${v.year_end})">
+          <div class="result-mid"><div class="result-name">${escapeHtml(v.make)} ${escapeHtml(v.model)}</div><div class="result-oem">${v.year_start} - ${v.year_end}</div></div>
+        </div>`
+      ).join('');
+      vehicleResults.querySelectorAll('.result-card').forEach(row => {
+        row.addEventListener('click', () => {
+          document.getElementById('l_vehicle_id').value = row.dataset.id;
+          document.getElementById('selectedVehicleLabel').textContent = '✓ ' + row.dataset.label;
+          vehicleResults.innerHTML = '';
+          vehicleSearch.value = '';
+        });
+      });
+    }catch(err){ vehicleResults.innerHTML = `<div class="empty">تعذّر البحث</div>`; }
+  }, 350);
+});
+
+document.getElementById('submitListingBtn').addEventListener('click', async () => {
+  const msgEl = document.getElementById('listingMsg');
+  msgEl.className = 'form-msg';
+
+  const vehicleId = document.getElementById('l_vehicle_id').value;
+  const price = document.getElementById('l_price').value;
+
+  if(!selectedProductId){ msgEl.className='form-msg error'; msgEl.textContent='اختر منتجاً أولاً'; return; }
+  if(!vehicleId){ msgEl.className='form-msg error'; msgEl.textContent='اختر المركبة المتوافقة'; return; }
+  if(!price){ msgEl.className='form-msg error'; msgEl.textContent='السعر مطلوب'; return; }
+
+  const btn = document.getElementById('submitListingBtn');
+  btn.disabled = true; btn.textContent = 'جارِ الإرسال…';
+
+  try{
+    const res = await fetch(`${API_BASE}/api/supplier/listings`, {
+      method:'POST',
+      headers: { ...authHeaders(), 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        product_id: selectedProductId,
+        vehicle_id: vehicleId,
+        price: price,
+        quality_grade: document.getElementById('l_grade').value || null,
+        brand: document.getElementById('l_brand').value.trim() || null,
+        country_of_origin: document.getElementById('l_country').value.trim() || null,
+        delivery_type: document.getElementById('l_delivery').value
+      })
+    });
+    const data = await res.json();
+
+    if(data.success){
+      msgEl.className='form-msg success';
+      msgEl.textContent = 'تم إرسال عرضك، بانتظار موافقة الإدارة';
+      document.getElementById('l_price').value='';
+      document.getElementById('l_brand').value='';
+      document.getElementById('l_country').value='';
+      document.getElementById('l_vehicle_id').value='';
+      document.getElementById('selectedVehicleLabel').textContent='';
+    } else {
+      msgEl.className='form-msg error';
+      msgEl.textContent = data.error || 'فشل إرسال العرض';
+    }
+  }catch(err){
+    msgEl.className='form-msg error';
+    msgEl.textContent = 'تعذّر الاتصال بالخادم';
+  }finally{
+    btn.disabled = false; btn.textContent = 'إرسال العرض للمراجعة';
+  }
+});
+
+// ===== تبويب عروضي =====
+const gradeLabels = { grade_1:'نوعية 1', grade_2:'نوعية 2', economy:'اقتصادية' };
+const statusLabels = { pending:'قيد المراجعة', approved:'معتمد', rejected:'مرفوض' };
+
+async function loadMyListings(){
+  const container = document.getElementById('myListings');
+  container.className = 'loading';
+  container.textContent = 'جارِ التحميل…';
+  try{
+    const res = await fetch(`${API_BASE}/api/supplier/listings`, { headers: authHeaders() });
+    const data = await res.json();
+    if(!data.success){ container.className='empty'; container.textContent = data.error || 'خطأ'; return; }
+    if(!data.listings.length){ container.className='empty'; container.textContent = 'ما عندكش عروض بعد'; return; }
+
+    container.className = '';
+    container.innerHTML = data.listings.map(l => `
+      <div class="listing-card">
+        <div class="listing-top">
+          <div>
+            <div class="listing-name">${escapeHtml(l.product_name)}</div>
+            <div class="listing-veh">${escapeHtml(l.make)} ${escapeHtml(l.model)} (${l.year_start}-${l.year_end}) ${l.quality_grade ? '· ' + (gradeLabels[l.quality_grade]||l.quality_grade) : ''}</div>
+          </div>
+          <span class="status-pill ${l.approval_status}">${statusLabels[l.approval_status]||l.approval_status}</span>
+        </div>
+        <div class="listing-bottom">
+          <span class="listing-price">${parseFloat(l.price).toLocaleString('ar-DZ')} دج</span>
+          <label class="switch">
+            <input type="checkbox" ${l.is_available ? 'checked' : ''} data-id="${l.id}">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.switch input').forEach(sw => {
+      sw.addEventListener('change', async () => {
+        try{
+          await fetch(`${API_BASE}/api/supplier/listings/${sw.dataset.id}/availability`, {
+            method:'POST',
+            headers: { ...authHeaders(), 'Content-Type':'application/json' },
+            body: JSON.stringify({ is_available: sw.checked })
+          });
+        }catch(err){ sw.checked = !sw.checked; }
+      });
+    });
+  }catch(err){
+    container.className='empty'; container.textContent='تعذّر الاتصال بالخادم';
+  }
+}
+</script>
+
+</body>
+</html>
