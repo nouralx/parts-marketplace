@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>كتالوج قطع الغيار</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17181a;
+    --panel:#1f2023;
+    --panel-raised:#26282c;
+    --amber:#e3963e;
+    --amber-dim:#8a5c26;
+    --steel:#5c7c99;
+    --text:#f2efe9;
+    --text-muted:#93938d;
+    --line:#34353a;
+    --line-bright:#46484e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:plaintext;}
+
+  /* خلفية معدنية خفيفة */
+  body{
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(227,150,62,0.06), transparent 40%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 5px);
+  }
+
+  a{color:inherit; text-decoration:none;}
+
+  /* ===== الهيدر ===== */
+  header{
+    border-bottom:1px solid var(--line);
+    padding:18px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    background:rgba(23,24,26,0.92);
+    backdrop-filter:blur(8px);
+    z-index:50;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Changa', sans-serif;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:0.3px;
+  }
+  .brand .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 10px var(--amber);
+    flex-shrink:0;
+  }
+  .brand small{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;
+    color:var(--text-muted);
+    font-weight:500;
+    letter-spacing:1.5px;
+    margin-top:1px;
+  }
+  .login-link{
+    font-size:13px;
+    color:var(--text-muted);
+    border:1px solid var(--line-bright);
+    padding:8px 16px;
+    border-radius:3px;
+    transition:border-color .15s, color .15s;
+  }
+  .login-link:hover{border-color:var(--amber); color:var(--amber);}
+
+  /* ===== قسم البطل ===== */
+  .hero{
+    padding:44px 20px 28px;
+    border-bottom:1px dashed var(--line);
+    position:relative;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--amber);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:22px; height:1px;
+    background:var(--amber);
+  }
+  h1{
+    font-family:'Changa', sans-serif;
+    font-weight:800;
+    font-size:clamp(30px, 7vw, 46px);
+    line-height:1.15;
+    margin-bottom:10px;
+  }
+  h1 span{color:var(--amber);}
+  .hero p{
+    color:var(--text-muted);
+    font-size:15px;
+    max-width:520px;
+    line-height:1.7;
+  }
+
+  /* شريط البحث بستايل "آلة كتابة اللاصقات" */
+  .search-wrap{
+    margin-top:26px;
+    max-width:560px;
+  }
+  .search-box{
+    display:flex;
+    align-items:center;
+    background:var(--panel);
+    border:1px solid var(--line-bright);
+    border-radius:4px;
+    padding:4px 4px 4px 4px;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search-box:focus-within{
+    border-color:var(--amber);
+    box-shadow:0 0 0 3px rgba(227,150,62,0.12);
+  }
+  .search-box svg{
+    flex-shrink:0;
+    margin:0 12px;
+    stroke:var(--text-muted);
+  }
+  .search-box input{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    font-size:15px;
+    padding:12px 4px;
+  }
+  .search-box input::placeholder{color:var(--text-muted);}
+  .search-hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-muted);
+    margin-top:8px;
+    letter-spacing:0.3px;
+  }
+
+  /* شرائح التصنيف */
+  .filters{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:18px;
+  }
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    padding:6px 13px;
+    border:1px solid var(--line-bright);
+    border-radius:20px;
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:all .15s;
+    background:transparent;
+  }
+  .chip.active, .chip:hover{
+    border-color:var(--amber);
+    color:var(--amber);
+    background:rgba(227,150,62,0.08);
+  }
+
+  /* ===== شبكة المنتجات ===== */
+  main{padding:28px 20px 60px;}
+  .count-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--text-muted);
+    letter-spacing:0.5px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:14px;
+  }
+  @media(min-width:640px){ .grid{grid-template-columns:repeat(3,1fr);} }
+  @media(min-width:960px){ .grid{grid-template-columns:repeat(4,1fr);} }
+  @media(min-width:1280px){ .grid{grid-template-columns:repeat(5,1fr);} }
+
+  /* بطاقة المنتج — على شكل لصاقة/تاغ قطعة غيار */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:transform .18s, border-color .18s, box-shadow .18s;
+    position:relative;
+  }
+  .card:hover{
+    transform:translateY(-3px);
+    border-color:var(--amber-dim);
+    box-shadow:0 10px 24px -8px rgba(0,0,0,0.5);
+  }
+  .card:hover .img-wrap img{transform:scale(1.06);}
+
+  .img-wrap{
+    aspect-ratio:1/1;
+    background:var(--panel-raised);
+    position:relative;
+    overflow:hidden;
+  }
+  .img-wrap img{
+    width:100%; height:100%;
+    object-fit:cover;
+    display:block;
+    transition:transform .35s ease;
+  }
+  .img-placeholder{
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--line-bright);
+  }
+  /* ثقب تعليق مثل لصاقات المستودعات */
+  .punch{
+    position:absolute; top:8px; left:8px;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--bg);
+    border:1px solid var(--line-bright);
+    z-index:2;
+  }
+  .badge{
+    position:absolute; bottom:8px; right:8px;
+    background:rgba(23,24,26,0.85);
+    backdrop-filter:blur(4px);
+    border:1px solid var(--line-bright);
+    border-radius:20px;
+    padding:3px 10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--amber);
+    z-index:2;
+  }
+  .badge.none{color:var(--text-muted);}
+
+  .card-body{
+    padding:11px 12px 13px;
+    border-top:1px dashed var(--line);
+  }
+  .card-name{
+    font-size:13.5px;
+    font-weight:600;
+    line-height:1.4;
+    margin-bottom:5px;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    min-height:37px;
+  }
+  .card-oem{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-muted);
+    letter-spacing:0.3px;
+  }
+  .card-oem::before{content:'OEM · ';color:var(--line-bright);}
+
+  /* حالة التحميل - هيكل عظمي */
+  .skel{
+    background:linear-gradient(90deg, var(--panel) 25%, var(--panel-raised) 50%, var(--panel) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+  }
+  @keyframes shimmer{ to{background-position:-200% 0;} }
+  .skel-card .img-wrap{background:none;}
+
+  /* حالة فارغة */
+  .empty{
+    grid-column:1/-1;
+    text-align:center;
+    padding:70px 20px;
+    color:var(--text-muted);
+  }
+  .empty svg{margin-bottom:16px; opacity:0.4;}
+  .empty h3{
+    font-family:'Changa', sans-serif;
+    font-size:19px;
+    color:var(--text);
+    margin-bottom:6px;
+  }
+  .empty p{font-size:13.5px; line-height:1.6;}
+
+  footer{
+    border-top:1px solid var(--line);
+    padding:22px 20px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-muted);
+    letter-spacing:1px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <div>
+      قطع غيار
+      <small>PARTS CATALOG</small>
+    </div>
+  </div>
+  <a href="/login.html" class="login-link">تسجيل الدخول</a>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">كتالوج موحّد لكل الموردين</div>
+  <h1>ابحث عن القطعة<br><span>بالصورة أو رقم الـ OEM</span></h1>
+  <p>كل القطع مصنّفة بصورة واحدة معتمدة من الإدارة. سجّل الدخول لرؤية الأسعار والبائعين القريبين منك.</p>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="اسم القطعة، الماركة، أو رقم OEM…" autocomplete="off">
+    </div>
+    <div class="search-hint">مثال: طقم فرامل، رقم OEM 04465-YZZE1، فلتر زيت تويوتا</div>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="chip active" data-cat="">الكل</button>
+    <button class="chip" data-cat="محرك">محرك</button>
+    <button class="chip" data-cat="فرامل">فرامل</button>
+    <button class="chip" data-cat="كهرباء">كهرباء</button>
+    <button class="chip" data-cat="تعليق">تعليق</button>
+    <button class="chip" data-cat="هيكل">هيكل خارجي</button>
+  </div>
+</section>
+
+<main>
+  <div class="count-row">
+    <span id="countLabel">جارِ التحميل…</span>
+    <span>كل الصور والأسماء مرئية للجميع</span>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>PARTS-MARKETPLACE · صُنعت خصيصاً للسوق الجزائري</footer>
+
+<script>
+// عدّل هذا فقط إذا كان الفرونت مستضاف على نطاق مختلف عن الـ API
+const API_BASE = '';
+
+const grid = document.getElementById('grid');
+const countLabel = document.getElementById('countLabel');
+const searchInput = document.getElementById('searchInput');
+const filters = document.getElementById('filters');
+
+let activeCategory = '';
+let debounceTimer = null;
+
+function skeletonCards(n){
+  let html = '';
+  for(let i=0;i<n;i++){
+    html += `<div class="card skel-card">
+      <div class="img-wrap skel"></div>
+      <div class="card-body">
+        <div class="skel" style="height:13px;border-radius:3px;margin-bottom:6px;"></div>
+        <div class="skel" style="height:10px;width:60%;border-radius:3px;"></div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+function placeholderIcon(){
+  return `<div class="img-placeholder">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <path d="m21 15-5-5L5 21"/>
+    </svg>
+  </div>`;
+}
+
+function renderProducts(products){
+  if(!products || products.length === 0){
+    grid.innerHTML = `<div class="empty">
+      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <h3>ما لقيناش أي نتيجة</h3>
+      <p>جرّب كلمة بحث ثانية أو رقم OEM مختلف</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = products.map(p => {
+    const img = (p.images && p.images.length > 0)
+      ? `<img src="${p.images[0]}" alt="${escapeHtml(p.name)}" loading="lazy">`
+      : placeholderIcon();
+
+    const offers = p.offers_count || 0;
+    const badge = offers > 0
+      ? `<div class="badge">${offers} عرض${offers > 1 ? 'اً' : ''}</div>`
+      : `<div class="badge none">لا يوجد عروض بعد</div>`;
+
+    return `<a class="card" href="/product.html?id=${p.id}">
+      <div class="img-wrap">
+        <span class="punch"></span>
+        ${img}
+        ${badge}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${escapeHtml(p.name)}</div>
+        <div class="card-oem">${escapeHtml(p.oem_number || '—')}</div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+async function loadCatalog(){
+  grid.innerHTML = skeletonCards(10);
+  countLabel.textContent = 'جارِ التحميل…';
+
+  try{
+    const q = searchInput.value.trim();
+    const params = new URLSearchParams();
+    if(q) params.set('search', q);
+
+    const res = await fetch(`${API_BASE}/api/catalog/search?${params.toString()}`);
+    const data = await res.json();
+
+    if(!data.success){
+      countLabel.textContent = 'تعذّر تحميل الكتالوج';
+      grid.innerHTML = `<div class="empty"><h3>صار خطأ</h3><p>${escapeHtml(data.error || '')}</p></div>`;
+      return;
+    }
+
+    let products = data.products || [];
+    if(activeCategory){
+      products = products.filter(p => (p.category || '').includes(activeCategory));
+    }
+
+    countLabel.textContent = `${products.length} قطعة`;
+    renderProducts(products);
+  }catch(err){
+    countLabel.textContent = 'تعذّر الاتصال بالخادم';
+    grid.innerHTML = `<div class="empty"><h3>لا يوجد اتصال</h3><p>تأكد من الشبكة وحاول مجدداً</p></div>`;
+  }
+}
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(loadCatalog, 350);
+});
+
+filters.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  filters.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  activeCategory = chip.dataset.cat || '';
+  loadCatalog();
+});
+
+loadCatalog();
+</script>
+
+</body>
+</html>
