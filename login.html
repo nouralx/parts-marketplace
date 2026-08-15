@@ -334,8 +334,23 @@
         document.getElementById('step1').classList.remove('active');
         document.getElementById('step2').classList.add('active');
 
-        // يمكن حفظ بيانات الجلسة هنا لاحقاً (localStorage أو توجيه لصفحة أخرى)
-        // مثال: window.location.href = profile.role === 'supplier' ? '/supplier-dashboard.html' : '/buyer-home.html';
+        // حفظ الجلسة: نفس الاسم "user_token" مستعمل في كل صفحات الموقع (catalog.html, product.html...)
+        localStorage.setItem('user_token', data.token);
+        localStorage.setItem('user_profile', JSON.stringify(profile));
+
+        // إعادة التوجيه: إما لصفحة "redirect" المطلوبة، أو للوجهة الافتراضية حسب نوع الحساب
+        const redirectTo = new URLSearchParams(window.location.search).get('redirect');
+        setTimeout(() => {
+          if (redirectTo) {
+            window.location.href = redirectTo;
+          } else if (profile.role === 'supplier') {
+            window.location.href = '/supplier-dashboard.html';
+          } else if (profile.role === 'admin' || profile.role === 'staff') {
+            window.location.href = '/admin-dashboard.html';
+          } else {
+            window.location.href = '/catalog.html';
+          }
+        }, 900);
       } else {
         showMsg('msg1', data.error || 'Error', 'error');
       }
