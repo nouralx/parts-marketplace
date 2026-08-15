@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تفاصيل القطعة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17181a;
+    --panel:#1f2023;
+    --panel-raised:#26282c;
+    --amber:#e3963e;
+    --amber-dim:#8a5c26;
+    --steel:#5c7c99;
+    --green:#5f9e6f;
+    --text:#f2efe9;
+    --text-muted:#93938d;
+    --line:#34353a;
+    --line-bright:#46484e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:90px;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:plaintext;}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit; cursor:pointer;}
+
+  /* ===== شريط علوي ===== */
+  .topbar{
+    display:flex; align-items:center; gap:12px;
+    padding:16px 18px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0;
+    background:rgba(23,24,26,0.92);
+    backdrop-filter:blur(8px);
+    z-index:60;
+  }
+  .back-btn{
+    width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line-bright);
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .topbar .brand{font-family:'Changa', sans-serif; font-weight:700; font-size:15px; color:var(--text-muted);}
+
+  /* ===== معرض الصور ===== */
+  .gallery{padding:18px;}
+  .main-img{
+    aspect-ratio:1/1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .main-img img{width:100%; height:100%; object-fit:cover;}
+  .main-img .ph{color:var(--line-bright);}
+  .thumbs{
+    display:flex; gap:8px; margin-top:10px;
+    overflow-x:auto;
+    padding-bottom:4px;
+  }
+  .thumb{
+    width:60px; height:60px; flex-shrink:0;
+    border-radius:5px; overflow:hidden;
+    border:2px solid var(--line);
+    cursor:pointer;
+    background:var(--panel);
+    transition:border-color .15s;
+  }
+  .thumb.active{border-color:var(--amber);}
+  .thumb img{width:100%; height:100%; object-fit:cover;}
+
+  /* ===== معلومات المنتج ===== */
+  .info{padding:0 18px 18px;}
+  .cat-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--amber);
+    border:1px solid var(--amber-dim);
+    padding:3px 10px;
+    border-radius:20px;
+    margin-bottom:12px;
+  }
+  h1{
+    font-family:'Changa', sans-serif;
+    font-weight:700;
+    font-size:22px;
+    line-height:1.4;
+    margin-bottom:8px;
+  }
+  .oem-row{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:14px;
+  }
+  .oem-row b{color:var(--text);}
+  .desc{
+    font-size:14px;
+    color:var(--text-muted);
+    line-height:1.8;
+    margin-bottom:16px;
+  }
+  .condition-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(95,158,111,0.12);
+    border:1px solid var(--green);
+    color:var(--green);
+    font-size:12px;
+    padding:5px 12px;
+    border-radius:20px;
+  }
+
+  /* ===== قسم العروض / تسجيل الدخول ===== */
+  .offers-section{
+    margin:0 18px 18px;
+    padding:16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .offers-count-line{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .offers-count-line .num{
+    font-family:'Changa', sans-serif;
+    font-weight:800;
+    font-size:26px;
+    color:var(--amber);
+  }
+  .offers-count-line .label{font-size:12.5px; color:var(--text-muted);}
+
+  .login-gate{
+    text-align:center;
+    padding:14px 8px 4px;
+  }
+  .login-gate svg{margin-bottom:10px; opacity:0.5;}
+  .login-gate p{font-size:13px; color:var(--text-muted); margin-bottom:14px; line-height:1.7;}
+  .login-gate a.btn{
+    display:inline-block;
+    background:var(--amber);
+    color:#1a1408;
+    font-weight:700;
+    font-size:14px;
+    padding:11px 28px;
+    border-radius:5px;
+  }
+
+  /* ===== شريط سفلي ثابت ===== */
+  .bottom-bar{
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    padding:12px 18px;
+    display:flex; gap:10px;
+    z-index:60;
+  }
+  .buy-btn{
+    flex:1;
+    background:var(--amber);
+    color:#1a1408;
+    border:none;
+    border-radius:6px;
+    font-weight:700;
+    font-size:15px;
+    padding:14px;
+  }
+  .buy-btn:disabled{background:var(--line-bright); color:var(--text-muted);}
+
+  /* ===== الشيت السفلي (قائمة البائعين) ===== */
+  .sheet-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:100;
+    display:none;
+    align-items:flex-end;
+  }
+  .sheet-overlay.open{display:flex;}
+  .sheet{
+    background:var(--bg);
+    width:100%;
+    max-height:82vh;
+    border-radius:16px 16px 0 0;
+    border-top:1px solid var(--line-bright);
+    overflow-y:auto;
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{ from{transform:translateY(100%);} to{transform:translateY(0);} }
+  .sheet-handle{
+    width:36px; height:4px; background:var(--line-bright);
+    border-radius:3px; margin:10px auto 4px;
+  }
+  .sheet-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 18px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .sheet-header h2{font-family:'Changa', sans-serif; font-size:17px; font-weight:700;}
+  .sheet-close{
+    width:30px; height:30px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    border:1px solid var(--line-bright);
+    color:var(--text-muted);
+  }
+
+  .seller-list{padding:8px 12px 20px;}
+  .seller-row{
+    display:flex; align-items:center; gap:12px;
+    padding:14px 10px;
+    border-bottom:1px dashed var(--line);
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .seller-row:hover{background:var(--panel);}
+  .seller-avatar{
+    width:42px; height:42px; border-radius:8px;
+    background:var(--panel-raised);
+    border:1px solid var(--line-bright);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Changa', sans-serif; font-weight:700; font-size:15px;
+    color:var(--amber);
+    flex-shrink:0;
+  }
+  .seller-mid{flex:1; min-width:0;}
+  .seller-name{
+    font-size:14px; font-weight:600;
+    display:flex; align-items:center; gap:5px;
+  }
+  .verified-tick{color:var(--steel); flex-shrink:0;}
+  .seller-meta{
+    font-size:11.5px; color:var(--text-muted);
+    margin-top:3px;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  }
+  .seller-meta .sep{opacity:0.5;}
+  .grade-pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    padding:1px 7px;
+    border-radius:10px;
+    border:1px solid var(--line-bright);
+  }
+  .grade-pill.g1{color:var(--green); border-color:var(--green);}
+  .seller-price{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--amber);
+    white-space:nowrap;
+  }
+  .seller-price small{display:block; font-size:9.5px; color:var(--text-muted); font-weight:400; text-align:left;}
+
+  .empty-offers{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--text-muted);
+    font-size:13.5px;
+  }
+
+  /* ===== شيت تفاصيل التاجر ===== */
+  .trader-detail{padding:6px 20px 26px;}
+  .trader-head{
+    display:flex; align-items:center; gap:14px;
+    padding:10px 0 18px;
+  }
+  .trader-avatar{
+    width:56px; height:56px; border-radius:10px;
+    background:var(--panel-raised);
+    border:1px solid var(--line-bright);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Changa', sans-serif; font-weight:700; font-size:20px;
+    color:var(--amber);
+    flex-shrink:0;
+  }
+  .trader-head h3{font-family:'Changa', sans-serif; font-size:18px; margin-bottom:4px;}
+  .trader-head .loc{font-size:12.5px; color:var(--text-muted);}
+
+  .detail-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-bottom:16px;
+  }
+  .detail-item{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:11px 13px;
+  }
+  .detail-item .k{font-size:10.5px; color:var(--text-muted); margin-bottom:4px;}
+  .detail-item .v{font-size:14px; font-weight:600;}
+  .detail-item.full{grid-column:1/-1;}
+
+  .price-box{
+    background:rgba(227,150,62,0.08);
+    border:1px solid var(--amber-dim);
+    border-radius:8px;
+    padding:16px;
+    text-align:center;
+    margin-bottom:16px;
+  }
+  .price-box .amount{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700; font-size:28px;
+    color:var(--amber);
+  }
+  .price-box .veh{font-size:12px; color:var(--text-muted); margin-top:4px;}
+
+  .call-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%;
+    background:var(--green);
+    color:#0e1a10;
+    border:none;
+    border-radius:6px;
+    font-weight:700; font-size:15px;
+    padding:14px;
+  }
+
+  .skel{
+    background:linear-gradient(90deg, var(--panel) 25%, var(--panel-raised) 50%, var(--panel) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+    border-radius:6px;
+  }
+  @keyframes shimmer{ to{background-position:-200% 0;} }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/catalog.html" class="back-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+  <span class="brand">قطع غيار · تفاصيل القطعة</span>
+</div>
+
+<div id="content">
+  <div class="gallery">
+    <div class="main-img skel" style="aspect-ratio:1/1;"></div>
+  </div>
+</div>
+
+<div class="bottom-bar" id="bottomBar" style="display:none;">
+  <button class="buy-btn" id="buyBtn">عرض البائعين</button>
+</div>
+
+<!-- شيت قائمة البائعين -->
+<div class="sheet-overlay" id="sellersOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2 id="sellersTitle">البائعون المتوفرون</h2>
+      <button class="sheet-close" id="closeSellers">✕</button>
+    </div>
+    <div class="seller-list" id="sellerList"></div>
+  </div>
+</div>
+
+<!-- شيت تفاصيل التاجر -->
+<div class="sheet-overlay" id="traderOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2>تفاصيل البائع</h2>
+      <button class="sheet-close" id="closeTrader">✕</button>
+    </div>
+    <div class="trader-detail" id="traderDetail"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '';
+const params = new URLSearchParams(window.location.search);
+const productId = params.get('id');
+const userToken = localStorage.getItem('user_token'); // عدّل حسب طريقة تخزين التوكن في مشروعك
+
+let currentProduct = null;
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function placeholderIcon(size){
+  return `<div class="ph"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+  </svg></div>`;
+}
+
+const deliveryLabels = {
+  shipping: 'يوفّر الشحن',
+  pickup_only: 'استلام من المحل فقط',
+  both: 'شحن أو استلام'
+};
+
+const gradeLabels = {
+  grade_1: 'نوعية 1 - أصلية',
+  grade_2: 'نوعية 2',
+  economy: 'اقتصادية'
+};
+
+function initials(name){
+  return (name || '؟').trim().charAt(0);
+}
+
+async function loadProduct(){
+  if(!productId){
+    document.getElementById('content').innerHTML = `<div class="empty-offers">رابط غير صحيح</div>`;
+    return;
+  }
+  try{
+    const headers = {};
+    if(userToken) headers['x-user-token'] = userToken;
+
+    const res = await fetch(`${API_BASE}/api/catalog/${productId}`, { headers });
+    const data = await res.json();
+
+    if(!data.success){
+      document.getElementById('content').innerHTML = `<div class="empty-offers">تعذّر تحميل المنتج: ${escapeHtml(data.error||'')}</div>`;
+      return;
+    }
+
+    currentProduct = data.product;
+    render(currentProduct);
+  }catch(err){
+    document.getElementById('content').innerHTML = `<div class="empty-offers">لا يوجد اتصال بالخادم</div>`;
+  }
+}
+
+function render(p){
+  const images = p.images && p.images.length ? p.images : [];
+  const mainImg = images.length
+    ? `<img id="mainImg" src="${images[0]}" alt="${escapeHtml(p.name)}">`
+    : placeholderIcon(56);
+
+  const thumbs = images.length > 1
+    ? `<div class="thumbs">${images.map((url,i)=>`<div class="thumb ${i===0?'active':''}" data-src="${url}" data-i="${i}"><img src="${url}"></div>`).join('')}</div>`
+    : '';
+
+  let offersHtml;
+  if(p.login_required){
+    offersHtml = `
+      <div class="offers-section">
+        <div class="offers-count-line">
+          <div><span class="num">${p.offers_count || 0}</span> <span class="label">بائع متوفر لهذه القطعة</span></div>
+        </div>
+        <div class="login-gate">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <p>سجّل الدخول لرؤية أسعار البائعين، محلاتهم، وأرقام تواصلهم</p>
+          <a class="btn" href="/login.html?redirect=/product.html?id=${p.id}">تسجيل الدخول</a>
+        </div>
+      </div>`;
+  } else {
+    offersHtml = `
+      <div class="offers-section">
+        <div class="offers-count-line">
+          <div><span class="num">${(p.offers||[]).length}</span> <span class="label">بائع متوفر لهذه القطعة</span></div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="gallery">
+      <div class="main-img">${mainImg}</div>
+      ${thumbs}
+    </div>
+    <div class="info">
+      ${p.category ? `<span class="cat-tag">${escapeHtml(p.category)}</span>` : ''}
+      <h1>${escapeHtml(p.name)}</h1>
+      <div class="oem-row">رقم OEM: <b class="mono">${escapeHtml(p.oem_number || '—')}</b></div>
+      ${p.description ? `<div class="desc">${escapeHtml(p.description)}</div>` : ''}
+      <span class="condition-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        قطعة جديدة (غير مستعملة)
+      </span>
+    </div>
+    ${offersHtml}
+  `;
+
+  // شريط الصور المصغرة
+  document.querySelectorAll('.thumb').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.thumb').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('mainImg').src = t.dataset.src;
+    });
+  });
+
+  // الشريط السفلي
+  const bottomBar = document.getElementById('bottomBar');
+  const buyBtn = document.getElementById('buyBtn');
+  bottomBar.style.display = 'flex';
+
+  if(p.login_required){
+    buyBtn.textContent = 'سجّل الدخول لعرض البائعين';
+    buyBtn.onclick = () => window.location.href = `/login.html?redirect=/product.html?id=${p.id}`;
+  } else if(!p.offers || p.offers.length === 0){
+    buyBtn.textContent = 'لا يوجد بائعون متوفرون حالياً';
+    buyBtn.disabled = true;
+  } else {
+    buyBtn.textContent = 'عرض البائعين';
+    buyBtn.disabled = false;
+    buyBtn.onclick = openSellersSheet;
+  }
+}
+
+function openSellersSheet(){
+  const list = document.getElementById('sellerList');
+  const offers = currentProduct.offers || [];
+
+  if(offers.length === 0){
+    list.innerHTML = `<div class="empty-offers">لا يوجد بائعون متوفرون حالياً لهذه القطعة</div>`;
+  } else {
+    list.innerHTML = offers.map((o, idx) => {
+      const gradeClass = o.quality_grade === 'grade_1' ? 'g1' : '';
+      const gradeText = gradeLabels[o.quality_grade] || o.quality_grade || '';
+      const vehText = o.make ? `${o.make} ${o.model || ''} ${o.year_start||''}-${o.year_end||''}` : '';
+
+      return `<div class="seller-row" data-idx="${idx}">
+        <div class="seller-avatar">${initials(o.store_name)}</div>
+        <div class="seller-mid">
+          <div class="seller-name">
+            ${escapeHtml(o.store_name || 'متجر')}
+            ${o.is_verified ? `<svg class="verified-tick" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 9.5 4.5 6 4l-.5 3.5L2 9l2 3-2 3 3.5 1.5L6 20l3.5-.5L12 22l2.5-2.5L18 20l.5-3.5L22 15l-2-3 2-3-3.5-1.5L18 4l-3.5.5z"/></svg>` : ''}
+          </div>
+          <div class="seller-meta">
+            <span>${escapeHtml(o.wilaya || 'غير محدد')}</span>
+            ${gradeText ? `<span class="sep">·</span><span class="grade-pill ${gradeClass}">${escapeHtml(gradeText)}</span>` : ''}
+          </div>
+          ${vehText ? `<div class="seller-meta" style="margin-top:4px;">${escapeHtml(vehText)}</div>` : ''}
+        </div>
+        <div class="seller-price">
+          ${parseFloat(o.price).toLocaleString('ar-DZ')}
+          <small>دج</small>
+        </div>
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('.seller-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const idx = parseInt(row.dataset.idx);
+        openTraderDetail(offers[idx]);
+      });
+    });
+  }
+
+  document.getElementById('sellersTitle').textContent = `${offers.length} بائع متوفر`;
+  document.getElementById('sellersOverlay').classList.add('open');
+}
+
+function openTraderDetail(o){
+  document.getElementById('sellersOverlay').classList.remove('open');
+
+  const gradeText = gradeLabels[o.quality_grade] || o.quality_grade || 'غير محدد';
+  const deliveryText = deliveryLabels[o.delivery_type] || 'غير محدد';
+  const vehText = o.make ? `${o.make} ${o.model || ''} (${o.year_start||''}–${o.year_end||''})` : 'غير محدد';
+
+  document.getElementById('traderDetail').innerHTML = `
+    <div class="trader-head">
+      <div class="trader-avatar">${initials(o.store_name)}</div>
+      <div>
+        <h3>${escapeHtml(o.store_name || 'متجر')} ${o.is_verified ? '✓' : ''}</h3>
+        <div class="loc">📍 ${escapeHtml(o.wilaya || 'الولاية غير محددة')}</div>
+      </div>
+    </div>
+
+    <div class="price-box">
+      <div class="amount">${parseFloat(o.price).toLocaleString('ar-DZ')} دج</div>
+      <div class="veh">متوافقة مع: ${escapeHtml(vehText)}</div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="k">الجودة</div>
+        <div class="v">${escapeHtml(gradeText)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="k">التوصيل</div>
+        <div class="v">${escapeHtml(deliveryText)}</div>
+      </div>
+      ${o.brand ? `<div class="detail-item"><div class="k">الماركة</div><div class="v">${escapeHtml(o.brand)}</div></div>` : ''}
+      ${o.country_of_origin ? `<div class="detail-item"><div class="k">بلد المنشأ</div><div class="v">${escapeHtml(o.country_of_origin)}</div></div>` : ''}
+      <div class="detail-item full">
+        <div class="k">رقم الهاتف</div>
+        <div class="v mono">${escapeHtml(o.phone || 'غير متوفر')}</div>
+      </div>
+    </div>
+
+    ${o.phone ? `<a class="call-btn" href="tel:${o.phone}">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      اتصل بالبائع
+    </a>` : ''}
+  `;
+
+  document.getElementById('traderOverlay').classList.add('open');
+}
+
+document.getElementById('closeSellers').addEventListener('click', () => {
+  document.getElementById('sellersOverlay').classList.remove('open');
+});
+document.getElementById('closeTrader').addEventListener('click', () => {
+  document.getElementById('traderOverlay').classList.remove('open');
+});
+document.getElementById('sellersOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'sellersOverlay') e.target.classList.remove('open');
+});
+document.getElementById('traderOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'traderOverlay') e.target.classList.remove('open');
+});
+
+loadProduct();
+</script>
+
+</body>
+</html>
