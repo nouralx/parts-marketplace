@@ -239,6 +239,15 @@
   }
 
   /* نافذة منبثقة عامة (تعديل السعر) */
+  .sheet-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:150;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .sheet-overlay.open{display:flex;}
   .sheet-box{
     background:var(--bg); width:100%; max-width:420px;
     border:1px solid var(--line-bright); border-radius:12px;
@@ -248,6 +257,14 @@
   .sheet-box-header{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
   .sheet-box-header h2{font-family:'Changa', sans-serif; font-size:16px; font-weight:700;}
   .sheet-box-sub{font-size:12px; color:var(--text-muted); margin-top:3px;}
+  .sheet-close{
+    width:30px; height:30px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    border:1px solid var(--line-bright);
+    background:transparent;
+    color:var(--text-muted); font-size:15px;
+  }
 
   /* عرض الصورة داخل بطاقة "عروضي" */
   .listing-img{
