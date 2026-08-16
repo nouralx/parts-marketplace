@@ -401,6 +401,34 @@
   <div id="myListings" class="loading">جارِ التحميل…</div>
 </div>
 
+<!-- معاينة الصورة كاملة -->
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <button class="lightbox-close" id="closeLightbox">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- تعديل السعر -->
+<div class="sheet-overlay" id="priceEditOverlay">
+  <div class="sheet-box">
+    <div class="sheet-box-header">
+      <div>
+        <h2>تعديل السعر</h2>
+        <p id="priceEditName" class="sheet-box-sub"></p>
+      </div>
+      <button class="sheet-close" id="closePriceEdit">✕</button>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>السعر الجديد (دج)</label>
+      <input type="number" id="priceEditInput" placeholder="0">
+    </div>
+    <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.7;">
+      تعديل السعر يعيد عرضك لحالة "قيد المراجعة" حتى توافق عليه الإدارة من جديد.
+    </p>
+    <button class="submit-btn" id="savePriceBtn">حفظ السعر الجديد</button>
+    <div class="form-msg" id="priceEditMsg"></div>
+  </div>
+</div>
+
 <script>
 const API_BASE = '';
 const userToken = localStorage.getItem('user_token');
@@ -806,34 +834,6 @@ async function loadMyListings(){
   }
 }
 </script>
-
-<!-- معاينة الصورة كاملة -->
-<div class="lightbox-overlay" id="lightboxOverlay">
-  <button class="lightbox-close" id="closeLightbox">✕</button>
-  <img id="lightboxImg" src="" alt="">
-</div>
-
-<!-- تعديل السعر -->
-<div class="sheet-overlay" id="priceEditOverlay">
-  <div class="sheet-box">
-    <div class="sheet-box-header">
-      <div>
-        <h2>تعديل السعر</h2>
-        <p id="priceEditName" class="sheet-box-sub"></p>
-      </div>
-      <button class="sheet-close" id="closePriceEdit">✕</button>
-    </div>
-    <div class="field" style="margin-top:14px;">
-      <label>السعر الجديد (دج)</label>
-      <input type="number" id="priceEditInput" placeholder="0">
-    </div>
-    <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.7;">
-      تعديل السعر يعيد عرضك لحالة "قيد المراجعة" حتى توافق عليه الإدارة من جديد.
-    </p>
-    <button class="submit-btn" id="savePriceBtn">حفظ السعر الجديد</button>
-    <div class="form-msg" id="priceEditMsg"></div>
-  </div>
-</div>
 
 </body>
 </html>
