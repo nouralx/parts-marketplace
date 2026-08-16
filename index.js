@@ -675,14 +675,47 @@ app.get('/api/supplier/listings', checkUserAuth, async (req, res) => {
     if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
 
     const result = await pool.query(
-      `SELECT pvp.id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type, pvp.is_available, pvp.approval_status,
+      `SELECT pvp.id, pvp.product_id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type, pvp.is_available, pvp.approval_status,
               p.name AS product_name, vr.make, vr.model, vr.year_start, vr.year_end
        FROM product_vehicle_pricing pvp
        JOIN products p ON p.id = pvp.product_id
        JOIN vehicles_reference vr ON vr.id = pvp.vehicle_id
        WHERE pvp.supplier_id = $1 ORDER BY pvp.created_at DESC`, [supplierId]);
 
-    res.json({ success: true, listings: result.rows });
+    const listings = result.rows;
+    for (const l of listings) {
+      const imgResult = await pool.query(
+        `SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY sort_order LIMIT 1`,
+        [l.product_id]);
+      l.image = imgResult.rows.length > 0 ? imgResult.rows[0].image_url : null;
+    }
+
+    res.json({ success: true, listings });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/supplier/listings/:id/price', checkUserAuth, async (req, res) => {
+  if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
+  const { id } = req.params;
+  const { price } = req.body;
+  if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+    return res.status(400).json({ success: false, error: 'السعر غير صحيح' });
+  }
+
+  try {
+    const supplierId = await getSupplierId(req.user.profile_id);
+    if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
+
+    // أي تعديل على السعر يعيد العرض لحالة "قيد المراجعة" حتى توافق عليه الإدارة من جديد
+    const result = await pool.query(
+      `UPDATE product_vehicle_pricing SET price = $1, approval_status = 'pending', updated_at = NOW()
+       WHERE id = $2 AND supplier_id = $3 RETURNING id`,
+      [price, id, supplierId]);
+
+    if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'العرض غير موجود أو ليس ملكك' });
+    res.json({ success: true, message: 'تم تحديث السعر، بانتظار موافقة الإدارة من جديد' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
