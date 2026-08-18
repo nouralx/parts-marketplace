@@ -340,7 +340,7 @@
       <small>PARTS CATALOG</small>
     </div>
   </div>
-  <a href="/login.html" class="login-link">تسجيل الدخول</a>
+  <a href="/login.html" class="login-link" id="authLink">تسجيل الدخول</a>
 </header>
 
 <section class="hero">
@@ -498,6 +498,17 @@ filters.addEventListener('click', (e) => {
 });
 
 loadCatalog();
+
+// تبديل الرابط: "طلباتي" للمشتري المسجَّل دخوله، أو "تسجيل الدخول" للزائر/غير المشتري
+(function(){
+  const token = localStorage.getItem('user_token');
+  const profile = JSON.parse(localStorage.getItem('user_profile') || 'null');
+  if(token && profile && profile.role === 'buyer'){
+    const link = document.getElementById('authLink');
+    link.href = '/my-orders.html';
+    link.textContent = 'طلباتي';
+  }
+})();
 </script>
 
 </body>
