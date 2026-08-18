@@ -696,6 +696,31 @@ app.get('/api/supplier/listings', checkUserAuth, async (req, res) => {
   }
 });
 
+app.get('/api/supplier/proposed-products', checkUserAuth, async (req, res) => {
+  if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
+  try {
+    const supplierId = await getSupplierId(req.user.profile_id);
+    if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
+
+    const result = await pool.query(
+      `SELECT id, name, oem_number, category, approval_status, admin_note, created_at
+       FROM products WHERE proposed_by_supplier_id = $1 ORDER BY created_at DESC`,
+      [supplierId]);
+
+    const products = result.rows;
+    for (const p of products) {
+      const imgResult = await pool.query(
+        `SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY sort_order LIMIT 1`,
+        [p.id]);
+      p.image = imgResult.rows.length > 0 ? imgResult.rows[0].image_url : null;
+    }
+
+    res.json({ success: true, products });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/supplier/listings/:id/price', checkUserAuth, async (req, res) => {
   if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
   const { id } = req.params;
