@@ -767,6 +767,47 @@ app.post('/api/supplier/listings/:id/availability', checkUserAuth, async (req, r
   }
 });
 
+// حذف عرض مرفوض فقط (لا يمكن حذف عرض معتمد أو قيد المراجعة لتفادي فقدان بيانات نشطة بالخطأ)
+app.delete('/api/supplier/listings/:id', checkUserAuth, async (req, res) => {
+  if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
+  const { id } = req.params;
+  try {
+    const supplierId = await getSupplierId(req.user.profile_id);
+    if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
+
+    const result = await pool.query(
+      `DELETE FROM product_vehicle_pricing WHERE id = $1 AND supplier_id = $2 AND approval_status = 'rejected' RETURNING id`,
+      [id, supplierId]);
+
+    if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'لا يمكن حذف هذا العرض (غير موجود، ليس ملكك، أو غير مرفوض)' });
+    res.json({ success: true, message: 'تم حذف العرض' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// حذف منتج مقترح مرفوض فقط (نحذف الصور المرتبطة أولاً لتفادي مشاكل المفتاح الأجنبي)
+app.delete('/api/supplier/proposed-products/:id', checkUserAuth, async (req, res) => {
+  if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
+  const { id } = req.params;
+  try {
+    const supplierId = await getSupplierId(req.user.profile_id);
+    if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
+
+    const check = await pool.query(
+      `SELECT id FROM products WHERE id = $1 AND proposed_by_supplier_id = $2 AND approval_status = 'rejected'`,
+      [id, supplierId]);
+    if (check.rows.length === 0) return res.status(404).json({ success: false, error: 'لا يمكن حذف هذا الاقتراح (غير موجود، ليس ملكك، أو غير مرفوض)' });
+
+    await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
+    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
+
+    res.json({ success: true, message: 'تم حذف الاقتراح' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ============ نظام الطلبات (Orders) ============
 
 app.post('/api/orders', checkUserAuth, async (req, res) => {
@@ -1008,6 +1049,19 @@ function requirePermission(permissionName) {
   };
 }
 
+// تسجيل كل تحرّك يقوم به الأدمن/الموظف في سجل المحفوظات
+async function logAdminActivity(adminId, action, targetType, targetId, note) {
+  try {
+    await pool.query(
+      `INSERT INTO admin_activity_log (admin_id, action, target_type, target_id, note, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [adminId, action, targetType, String(targetId), note || null]
+    );
+  } catch (err) {
+    console.error('فشل تسجيل نشاط الأدمن:', err.message);
+  }
+}
+
 app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -1131,6 +1185,7 @@ app.post('/api/admin/review-supplier', checkAdminAuth, requirePermission('can_re
     }
 
     res.json({ success: true, message: 'تم تحديث حالة الطلب' });
+    logAdminActivity(req.admin.admin_id, decision === 'approved' ? 'موافقة على مورّد' : 'رفض مورّد', 'supplier_document', document_id, note);
 
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1166,6 +1221,7 @@ app.post('/api/admin/toggle-user-status', checkAdminAuth, requirePermission('can
       [is_active, user_id]
     );
     res.json({ success: true, message: 'تم تحديث حالة الحساب' });
+    logAdminActivity(req.admin.admin_id, is_active ? 'تفعيل حساب مستخدم' : 'تعطيل حساب مستخدم', 'user', user_id, null);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1216,6 +1272,7 @@ app.post('/api/admin/review-product', checkAdminAuth, requirePermission('can_man
       [decision, note || null, product_id]
     );
     res.json({ success: true, message: 'تم تحديث حالة المنتج' });
+    logAdminActivity(req.admin.admin_id, decision === 'approved' ? 'موافقة على منتج' : 'رفض منتج', 'product', product_id, note);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1258,6 +1315,29 @@ app.post('/api/admin/review-pricing', checkAdminAuth, requirePermission('can_man
       [decision, note || null, pricing_id]
     );
     res.json({ success: true, message: 'تم تحديث حالة السعر' });
+    logAdminActivity(req.admin.admin_id, decision === 'approved' ? 'موافقة على سعر' : 'رفض سعر', 'pricing', pricing_id, note);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============ سجل نشاط الأدمن (المحفوظات) ============
+
+app.get('/api/admin/activity-log', checkAdminAuth, async (req, res) => {
+  // السجل يخص الأدمن الرئيسي فقط (رقابة على كل الموظفين)
+  if (req.admin.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'هذه الميزة للأدمن الرئيسي فقط' });
+  }
+  try {
+    const result = await pool.query(
+      `SELECT al.id, al.action, al.target_type, al.target_id, al.note, al.created_at,
+              p.full_name AS admin_name
+       FROM admin_activity_log al
+       JOIN profiles p ON p.id = al.admin_id
+       ORDER BY al.created_at DESC
+       LIMIT 300`
+    );
+    res.json({ success: true, logs: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
