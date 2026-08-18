@@ -284,6 +284,11 @@
     background:transparent; border:1px solid var(--amber-dim);
     border-radius:20px; padding:5px 12px;
   }
+  .delete-listing-btn, .delete-proposal-btn{
+    font-size:11.5px; font-weight:600; color:var(--red);
+    background:transparent; border:1px solid var(--red);
+    border-radius:20px; padding:5px 12px;
+  }
 </style>
 </head>
 <body>
@@ -811,14 +816,18 @@ async function loadMyListings(){
           </div>
           <span class="status-pill ${l.approval_status}">${statusLabels[l.approval_status]||l.approval_status}</span>
         </div>
+        ${l.approval_status === 'rejected' && l.admin_note ? `<div class="rejection-note"><b>سبب الرفض:</b> ${escapeHtml(l.admin_note)}</div>` : ''}
         <div class="listing-bottom">
           <span class="listing-price">${parseFloat(l.price).toLocaleString('ar-DZ')} دج</span>
           <div style="display:flex; align-items:center; gap:10px;">
-            <button class="edit-price-btn" data-id="${l.id}" data-name="${escapeHtml(l.product_name)}" data-price="${l.price}">تعديل السعر</button>
-            <label class="switch">
-              <input type="checkbox" ${l.is_available ? 'checked' : ''} data-id="${l.id}">
-              <span class="switch-track"></span>
-            </label>
+            ${l.approval_status === 'rejected'
+              ? `<button class="delete-listing-btn" data-id="${l.id}">🗑 حذف</button>`
+              : `<button class="edit-price-btn" data-id="${l.id}" data-name="${escapeHtml(l.product_name)}" data-price="${l.price}">تعديل السعر</button>
+                 <label class="switch">
+                   <input type="checkbox" ${l.is_available ? 'checked' : ''} data-id="${l.id}">
+                   <span class="switch-track"></span>
+                 </label>`
+            }
           </div>
         </div>
       </div>
@@ -829,6 +838,19 @@ async function loadMyListings(){
     });
     container.querySelectorAll('.edit-price-btn').forEach(btn => {
       btn.addEventListener('click', () => openPriceEdit(btn.dataset.id, btn.dataset.name, btn.dataset.price));
+    });
+    container.querySelectorAll('.delete-listing-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('حذف هذا العرض المرفوض نهائياً؟')) return;
+        try{
+          const res = await fetch(`${API_BASE}/api/supplier/listings/${btn.dataset.id}`, {
+            method:'DELETE', headers: authHeaders()
+          });
+          const data = await res.json();
+          if(data.success) loadMyListings();
+          else alert(data.error || 'فشل الحذف');
+        }catch(err){ alert('تعذّر الاتصال بالخادم'); }
+      });
     });
 
     container.querySelectorAll('.switch input').forEach(sw => {
@@ -871,11 +893,25 @@ async function loadMyProposals(){
           <span class="status-pill ${p.approval_status}">${statusLabels[p.approval_status]||p.approval_status}</span>
         </div>
         ${p.approval_status === 'rejected' && p.admin_note ? `<div class="rejection-note"><b>سبب الرفض:</b> ${escapeHtml(p.admin_note)}</div>` : ''}
+        ${p.approval_status === 'rejected' ? `<div class="listing-bottom" style="justify-content:flex-end;"><button class="delete-proposal-btn" data-id="${p.id}">🗑 حذف</button></div>` : ''}
       </div>
     `).join('');
 
     container.querySelectorAll('.listing-img').forEach(box => {
       box.addEventListener('click', () => openLightbox(box.dataset.full));
+    });
+    container.querySelectorAll('.delete-proposal-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('حذف هذا الاقتراح المرفوض نهائياً؟')) return;
+        try{
+          const res = await fetch(`${API_BASE}/api/supplier/proposed-products/${btn.dataset.id}`, {
+            method:'DELETE', headers: authHeaders()
+          });
+          const data = await res.json();
+          if(data.success) loadMyProposals();
+          else alert(data.error || 'فشل الحذف');
+        }catch(err){ alert('تعذّر الاتصال بالخادم'); }
+      });
     });
   }catch(err){
     container.className='empty'; container.textContent='تعذّر الاتصال بالخادم';
