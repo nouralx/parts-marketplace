@@ -213,6 +213,12 @@
   .log-meta { font-size: 11.5px; color: #9ca3af; margin-top: 3px; }
   .log-note { font-size: 12px; color: #6b7280; margin-top: 5px; background:#f9fafb; padding:6px 9px; border-radius:6px; }
   .log-time { font-size: 11px; color: #9ca3af; white-space: nowrap; text-align: left; }
+  .log-row { align-items: center; }
+  .log-check { width: 18px; height: 18px; margin-left: 4px; flex-shrink: 0; }
+  .log-delete-one {
+    background: none; border: none; color: #dc2626;
+    font-size: 15px; cursor: pointer; padding: 4px 6px; flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -265,6 +271,9 @@
   <!-- المحفوظات -->
   <div id="panel-log" class="panel">
     <div id="logLoading" class="loading">جارٍ التحميل...</div>
+    <div id="logBulkBar" style="display:none; margin-bottom:10px;">
+      <button class="btn btn-reject" style="width:auto; padding:8px 16px;" onclick="deleteSelectedLogs()">🗑 حذف المحدد (<span id="logSelectedCount">0</span>)</button>
+    </div>
     <div id="logList"></div>
     <div id="logEmpty" class="empty-state" style="display:none;">لا يوجد أي نشاط مسجَّل بعد</div>
   </div>
@@ -622,6 +631,7 @@
     document.getElementById('logLoading').style.display = 'block';
     document.getElementById('logList').innerHTML = '';
     document.getElementById('logEmpty').style.display = 'none';
+    document.getElementById('logBulkBar').style.display = 'none';
 
     const data = await apiCall('/api/admin/activity-log');
     document.getElementById('logLoading').style.display = 'none';
@@ -645,15 +655,56 @@
       const row = document.createElement('div');
       row.className = 'log-row';
       row.innerHTML = `
-        <div>
+        <input type="checkbox" class="log-check" value="${log.id}" onchange="updateLogSelection()">
+        <div style="flex:1;">
           <div class="log-action">${escapeHtml(log.action)}</div>
           <div class="log-meta">بواسطة: ${escapeHtml(log.admin_name)} · معرّف العنصر: ${escapeHtml(String(log.target_id))}</div>
           ${log.note ? `<div class="log-note">${escapeHtml(log.note)}</div>` : ''}
         </div>
         <div class="log-time">${dateStr}<br>${timeStr}</div>
+        <button class="log-delete-one" title="حذف هذا السجل" onclick="deleteOneLog(${log.id})">✕</button>
       `;
       listEl.appendChild(row);
     });
+  }
+
+  function updateLogSelection() {
+    const checked = document.querySelectorAll('.log-check:checked');
+    document.getElementById('logSelectedCount').textContent = checked.length;
+    document.getElementById('logBulkBar').style.display = checked.length > 0 ? 'block' : 'none';
+  }
+
+  async function deleteOneLog(id) {
+    if (!confirm('حذف هذا السجل من المحفوظات؟')) return;
+    const data = await apiCall('/api/admin/activity-log', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [id] })
+    });
+    if (data && data.success) {
+      showToast('تم الحذف');
+      loadActivityLog();
+    } else {
+      showToast(data?.error || 'فشل الحذف');
+    }
+  }
+
+  async function deleteSelectedLogs() {
+    const ids = Array.from(document.querySelectorAll('.log-check:checked')).map(cb => parseInt(cb.value));
+    if (ids.length === 0) return;
+    if (!confirm(`حذف ${ids.length} سجل من المحفوظات نهائياً؟`)) return;
+
+    const data = await apiCall('/api/admin/activity-log', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    if (data && data.success) {
+      showToast(data.message || 'تم الحذف');
+      loadActivityLog();
+    } else {
+      showToast(data?.error || 'فشل الحذف');
+    }
   }
 
   // تحميل أولي
