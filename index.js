@@ -675,7 +675,7 @@ app.get('/api/supplier/listings', checkUserAuth, async (req, res) => {
     if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
 
     const result = await pool.query(
-      `SELECT pvp.id, pvp.product_id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type, pvp.is_available, pvp.approval_status,
+      `SELECT pvp.id, pvp.product_id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type, pvp.is_available, pvp.approval_status, pvp.admin_note,
               p.name AS product_name, vr.make, vr.model, vr.year_start, vr.year_end
        FROM product_vehicle_pricing pvp
        JOIN products p ON p.id = pvp.product_id
@@ -1175,16 +1175,20 @@ app.get('/api/admin/pending-products', checkAdminAuth, requirePermission('can_ma
 });
 
 app.post('/api/admin/review-product', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {
-  const { product_id, decision } = req.body;
+  const { product_id, decision, note } = req.body;
 
   if (!product_id || (decision !== 'approved' && decision !== 'rejected')) {
     return res.status(400).json({ success: false, error: 'بيانات غير صحيحة' });
   }
 
+  if (decision === 'rejected' && (!note || !note.trim())) {
+    return res.status(400).json({ success: false, error: 'سبب الرفض مطلوب' });
+  }
+
   try {
     await pool.query(
-      `UPDATE products SET approval_status = $1, updated_at = NOW() WHERE id = $2`,
-      [decision, product_id]
+      `UPDATE products SET approval_status = $1, admin_note = $2, updated_at = NOW() WHERE id = $3`,
+      [decision, note || null, product_id]
     );
     res.json({ success: true, message: 'تم تحديث حالة المنتج' });
   } catch (err) {
@@ -1213,16 +1217,20 @@ app.get('/api/admin/pending-pricing', checkAdminAuth, requirePermission('can_man
 });
 
 app.post('/api/admin/review-pricing', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {
-  const { pricing_id, decision } = req.body;
+  const { pricing_id, decision, note } = req.body;
 
   if (!pricing_id || (decision !== 'approved' && decision !== 'rejected')) {
     return res.status(400).json({ success: false, error: 'بيانات غير صحيحة' });
   }
 
+  if (decision === 'rejected' && (!note || !note.trim())) {
+    return res.status(400).json({ success: false, error: 'سبب الرفض مطلوب' });
+  }
+
   try {
     await pool.query(
-      `UPDATE product_vehicle_pricing SET approval_status = $1, updated_at = NOW() WHERE id = $2`,
-      [decision, pricing_id]
+      `UPDATE product_vehicle_pricing SET approval_status = $1, admin_note = $2, updated_at = NOW() WHERE id = $3`,
+      [decision, note || null, pricing_id]
     );
     res.json({ success: true, message: 'تم تحديث حالة السعر' });
   } catch (err) {
