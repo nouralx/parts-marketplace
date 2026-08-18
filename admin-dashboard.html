@@ -374,13 +374,18 @@
   }
 
   async function reviewSupplier(documentId, decision) {
-    const confirmMsg = decision === 'approved' ? 'تأكيد الموافقة على هذا المورّد؟' : 'تأكيد رفض هذا المورّد؟';
-    if (!confirm(confirmMsg)) return;
+    let note = '';
+    if (decision === 'rejected') {
+      note = prompt('اكتب سبب رفض هذا المورّد:');
+      if (note === null) return; // تراجع الأدمن
+    } else {
+      if (!confirm('تأكيد الموافقة على هذا المورّد؟')) return;
+    }
 
     const data = await apiCall('/api/admin/review-supplier', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ document_id: documentId, decision })
+      body: JSON.stringify({ document_id: documentId, decision, note: note || undefined })
     });
 
     if (data && data.success) {
@@ -438,13 +443,19 @@
   }
 
   async function reviewProduct(productId, decision) {
-    const confirmMsg = decision === 'approved' ? 'تأكيد الموافقة على هذا المنتج؟' : 'تأكيد رفض هذا المنتج؟';
-    if (!confirm(confirmMsg)) return;
+    let note = '';
+    if (decision === 'rejected') {
+      note = prompt('اكتب سبب رفض هذا المنتج (إلزامي):');
+      if (note === null) return; // تراجع الأدمن
+      if (!note.trim()) { showToast('سبب الرفض مطلوب'); return; }
+    } else {
+      if (!confirm('تأكيد الموافقة على هذا المنتج؟')) return;
+    }
 
     const data = await apiCall('/api/admin/review-product', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: productId, decision })
+      body: JSON.stringify({ product_id: productId, decision, note: note || undefined })
     });
 
     if (data && data.success) {
@@ -497,13 +508,19 @@
   }
 
   async function reviewPricing(pricingId, decision) {
-    const confirmMsg = decision === 'approved' ? 'تأكيد الموافقة على هذا السعر؟' : 'تأكيد رفض هذا السعر؟';
-    if (!confirm(confirmMsg)) return;
+    let note = '';
+    if (decision === 'rejected') {
+      note = prompt('اكتب سبب رفض هذا السعر (إلزامي):');
+      if (note === null) return; // تراجع الأدمن
+      if (!note.trim()) { showToast('سبب الرفض مطلوب'); return; }
+    } else {
+      if (!confirm('تأكيد الموافقة على هذا السعر؟')) return;
+    }
 
     const data = await apiCall('/api/admin/review-pricing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pricing_id: pricingId, decision })
+      body: JSON.stringify({ pricing_id: pricingId, decision, note: note || undefined })
     });
 
     if (data && data.success) {
