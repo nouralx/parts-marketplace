@@ -1343,6 +1343,26 @@ app.get('/api/admin/activity-log', checkAdminAuth, async (req, res) => {
   }
 });
 
+// حذف سجلات مختارة من المحفوظات (يدعم حذف عنصر واحد أو عدة عناصر دفعة واحدة)
+app.delete('/api/admin/activity-log', checkAdminAuth, async (req, res) => {
+  if (req.admin.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'هذه الميزة للأدمن الرئيسي فقط' });
+  }
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, error: 'يجب تحديد سجل واحد على الأقل' });
+  }
+  try {
+    const result = await pool.query(
+      `DELETE FROM admin_activity_log WHERE id = ANY($1::bigint[]) RETURNING id`,
+      [ids]
+    );
+    res.json({ success: true, message: `تم حذف ${result.rows.length} سجل`, deleted_count: result.rows.length });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ============ لوحة تحكم: كل الطلبات ============
 
 app.get('/api/admin/orders', checkAdminAuth, requirePermission('can_manage_orders'), async (req, res) => {
