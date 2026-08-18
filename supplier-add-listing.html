@@ -194,6 +194,12 @@
   .status-pill.pending{background:rgba(227,150,62,0.12); color:var(--amber); border:1px solid var(--amber-dim);}
   .status-pill.approved{background:rgba(95,158,111,0.12); color:var(--green); border:1px solid var(--green);}
   .status-pill.rejected{background:rgba(192,96,90,0.12); color:var(--red); border:1px solid var(--red);}
+  .rejection-note{
+    background:rgba(192,96,90,0.08); border:1px solid rgba(192,96,90,0.3);
+    border-radius:6px; padding:9px 12px; margin-top:9px;
+    font-size:12.5px; color:#e0a19d; line-height:1.7;
+  }
+  .rejection-note b{color:var(--red);}
 
   .listing-bottom{display:flex; justify-content:space-between; align-items:center;}
   .listing-price{font-family:'IBM Plex Mono', monospace; font-weight:600; color:var(--amber); font-size:14px;}
@@ -289,6 +295,7 @@
 <div class="tabs">
   <div class="tab active" data-tab="add">إضافة عرض</div>
   <div class="tab" data-tab="mine">عروضي</div>
+  <div class="tab" data-tab="proposals">اقتراحاتي</div>
 </div>
 
 <!-- تبويب: إضافة عرض -->
@@ -399,6 +406,11 @@
 <!-- تبويب: عروضي -->
 <div class="panel" id="panel-mine">
   <div id="myListings" class="loading">جارِ التحميل…</div>
+</div>
+
+<!-- تبويب: اقتراحاتي -->
+<div class="panel" id="panel-proposals">
+  <div id="myProposals" class="loading">جارِ التحميل…</div>
 </div>
 
 <!-- معاينة الصورة كاملة -->
@@ -533,6 +545,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
     if(tab.dataset.tab === 'mine') loadMyListings();
+    if(tab.dataset.tab === 'proposals') loadMyProposals();
   });
 });
 
@@ -828,6 +841,41 @@ async function loadMyListings(){
           });
         }catch(err){ sw.checked = !sw.checked; }
       });
+    });
+  }catch(err){
+    container.className='empty'; container.textContent='تعذّر الاتصال بالخادم';
+  }
+}
+
+async function loadMyProposals(){
+  const container = document.getElementById('myProposals');
+  container.className = 'loading';
+  container.textContent = 'جارِ التحميل…';
+  try{
+    const res = await fetch(`${API_BASE}/api/supplier/proposed-products`, { headers: authHeaders() });
+    const data = await res.json();
+    if(!data.success){ container.className='empty'; container.textContent = data.error || 'خطأ'; return; }
+    if(!data.products.length){ container.className='empty'; container.textContent = 'ما اقترحتش أي منتج جديد بعد'; return; }
+
+    container.className = '';
+    container.innerHTML = data.products.map(p => `
+      <div class="listing-card">
+        <div class="listing-top">
+          <div class="listing-img" data-full="${p.image || ''}">
+            ${p.image ? `<img src="${p.image}">` : '📦'}
+          </div>
+          <div style="flex:1;">
+            <div class="listing-name">${escapeHtml(p.name)}</div>
+            <div class="listing-veh">${escapeHtml(p.oem_number || '—')} ${p.category ? '· ' + escapeHtml(p.category) : ''}</div>
+          </div>
+          <span class="status-pill ${p.approval_status}">${statusLabels[p.approval_status]||p.approval_status}</span>
+        </div>
+        ${p.approval_status === 'rejected' && p.admin_note ? `<div class="rejection-note"><b>سبب الرفض:</b> ${escapeHtml(p.admin_note)}</div>` : ''}
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.listing-img').forEach(box => {
+      box.addEventListener('click', () => openLightbox(box.dataset.full));
     });
   }catch(err){
     container.className='empty'; container.textContent='تعذّر الاتصال بالخادم';
