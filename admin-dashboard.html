@@ -198,6 +198,21 @@
     font-size: 16px;
     color: #1d4ed8;
   }
+  .log-row {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .log-action { font-size: 13.5px; font-weight: 700; }
+  .log-meta { font-size: 11.5px; color: #9ca3af; margin-top: 3px; }
+  .log-note { font-size: 12px; color: #6b7280; margin-top: 5px; background:#f9fafb; padding:6px 9px; border-radius:6px; }
+  .log-time { font-size: 11px; color: #9ca3af; white-space: nowrap; text-align: left; }
 </style>
 </head>
 <body>
@@ -215,6 +230,7 @@
   <div class="tab" id="tab-products" onclick="switchTab('products')">المنتجات</div>
   <div class="tab" id="tab-pricing" onclick="switchTab('pricing')">الأسعار</div>
   <div class="tab" id="tab-users" onclick="switchTab('users')">المستخدمون</div>
+  <div class="tab" id="tab-log" onclick="switchTab('log')">المحفوظات</div>
 </div>
 
 <div class="content">
@@ -244,6 +260,13 @@
   <div id="panel-users" class="panel">
     <div id="usersLoading" class="loading">جارٍ التحميل...</div>
     <div id="usersList"></div>
+  </div>
+
+  <!-- المحفوظات -->
+  <div id="panel-log" class="panel">
+    <div id="logLoading" class="loading">جارٍ التحميل...</div>
+    <div id="logList"></div>
+    <div id="logEmpty" class="empty-state" style="display:none;">لا يوجد أي نشاط مسجَّل بعد</div>
   </div>
 
 </div>
@@ -319,6 +342,7 @@
     if (name === 'products') loadPendingProducts();
     if (name === 'pricing') loadPendingPricing();
     if (name === 'users') loadUsers();
+    if (name === 'log') loadActivityLog();
   }
 
   // ===== طلبات الموردين =====
@@ -590,6 +614,46 @@
     } else {
       showToast(data?.error || 'فشل تنفيذ الإجراء');
     }
+  }
+
+  // ===== المحفوظات (سجل نشاط الأدمن) =====
+
+  async function loadActivityLog() {
+    document.getElementById('logLoading').style.display = 'block';
+    document.getElementById('logList').innerHTML = '';
+    document.getElementById('logEmpty').style.display = 'none';
+
+    const data = await apiCall('/api/admin/activity-log');
+    document.getElementById('logLoading').style.display = 'none';
+
+    if (!data || !data.success) {
+      showToast(data?.error || 'فشل تحميل السجل');
+      return;
+    }
+
+    if (data.logs.length === 0) {
+      document.getElementById('logEmpty').style.display = 'block';
+      return;
+    }
+
+    const listEl = document.getElementById('logList');
+    data.logs.forEach(log => {
+      const d = new Date(log.created_at);
+      const dateStr = d.toLocaleDateString('ar-DZ');
+      const timeStr = d.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+
+      const row = document.createElement('div');
+      row.className = 'log-row';
+      row.innerHTML = `
+        <div>
+          <div class="log-action">${escapeHtml(log.action)}</div>
+          <div class="log-meta">بواسطة: ${escapeHtml(log.admin_name)} · معرّف العنصر: ${escapeHtml(String(log.target_id))}</div>
+          ${log.note ? `<div class="log-note">${escapeHtml(log.note)}</div>` : ''}
+        </div>
+        <div class="log-time">${dateStr}<br>${timeStr}</div>
+      `;
+      listEl.appendChild(row);
+    });
   }
 
   // تحميل أولي
