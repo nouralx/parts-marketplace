@@ -574,13 +574,14 @@ app.get('/api/catalog/:id', optionalUserAuth, async (req, res) => {
     const imgs = await pool.query(`SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY sort_order`, [id]);
     product.images = imgs.rows.map(r => r.image_url);
 
+    // 🔐 إذا لم يكن هناك مستخدم مسجل دخول: أخفِ البائعين تماماً
     if (!req.user) {
       const cnt = await pool.query(
         `SELECT COUNT(*) FROM product_vehicle_pricing WHERE product_id = $1 AND approval_status = 'approved' AND is_available = true`,
         [id]);
       product.offers_count = parseInt(cnt.rows[0].count);
-      product.offers = null;
-      product.login_required = true;
+      product.offers = []; // ← تأكد من أنها مصفوفة فارغة وليس null
+      product.login_required = true; // ← علامة واضحة تقول: يجب التسجيل
       return res.json({ success: true, product });
     }
 
@@ -598,6 +599,39 @@ app.get('/api/catalog/:id', optionalUserAuth, async (req, res) => {
     product.offers = offers.rows;
     product.login_required = false;
     res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============ إندبوينت حماية: جلب البائعين (يتطلب تسجيل دخول إلزامي) ============
+
+app.get('/api/product-suppliers/:productId', checkUserAuth, async (req, res) => {
+  const { productId } = req.params;
+  
+  try {
+    // تأكد من أن المنتج موجود ومعتمد
+    const productResult = await pool.query(
+      `SELECT id FROM products WHERE id = $1 AND approval_status = 'approved'`,
+      [productId]);
+    
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'المنتج غير موجود' });
+    }
+
+    // جلب البائعين فقط للمستخدمين المسجلين
+    const suppliers = await pool.query(
+      `SELECT pvp.id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type,
+              vr.make, vr.model, vr.year_start, vr.year_end,
+              s.store_name, s.wilaya, s.is_verified, pr.phone
+       FROM product_vehicle_pricing pvp
+       JOIN vehicles_reference vr ON vr.id = pvp.vehicle_id
+       JOIN suppliers s ON s.id = pvp.supplier_id
+       JOIN profiles pr ON pr.id = s.user_id
+       WHERE pvp.product_id = $1 AND pvp.approval_status = 'approved' AND pvp.is_available = true
+       ORDER BY pvp.price ASC`, [productId]);
+
+    res.json({ success: true, suppliers: suppliers.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
