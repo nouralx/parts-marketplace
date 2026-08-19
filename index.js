@@ -821,26 +821,7 @@ app.delete('/api/supplier/listings/:id', checkUserAuth, async (req, res) => {
 });
 
 // حذف منتج مقترح مرفوض فقط (نحذف الصور المرتبطة أولاً لتفادي مشاكل المفتاح الأجنبي)
-app.delete('/api/supplier/proposed-products/:id', checkUserAuth, async (req, res) => {
-  if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
-  const { id } = req.params;
-  try {
-    const supplierId = await getSupplierId(req.user.profile_id);
-    if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
 
-    const check = await pool.query(
-      `SELECT id FROM products WHERE id = $1 AND proposed_by_supplier_id = $2 AND approval_status = 'rejected'`,
-      [id, supplierId]);
-    if (check.rows.length === 0) return res.status(404).json({ success: false, error: 'لا يمكن حذف هذا الاقتراح (غير موجود، ليس ملكك، أو غير مرفوض)' });
-
-    await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
-    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
-
-    res.json({ success: true, message: 'تم حذف الاقتراح' });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 
 // ============ نظام الطلبات (Orders) ============
 
@@ -1307,6 +1288,43 @@ app.post('/api/admin/review-product', checkAdminAuth, requirePermission('can_man
     );
     res.json({ success: true, message: 'تم تحديث حالة المنتج' });
     logAdminActivity(req.admin.admin_id, decision === 'approved' ? 'موافقة على منتج' : 'رفض منتج', 'product', product_id, note);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============ 🔐 حذف المنتجات (Admin فقط) ============
+
+app.delete('/api/admin/delete-product/:id', checkAdminAuth, requirePermission('can_delete_products'), async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ success: false, error: 'يجب تحديد سبب الحذف' });
+  }
+
+  try {
+    // تأكد من وجود المنتج
+    const productCheck = await pool.query(`SELECT id, name FROM products WHERE id = $1`, [id]);
+    if (productCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'المنتج غير موجود' });
+    }
+
+    const productName = productCheck.rows[0].name;
+
+    // حذف الصور أولاً
+    await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
+
+    // حذف تسعير المنتج
+    await pool.query(`DELETE FROM product_vehicle_pricing WHERE product_id = $1`, [id]);
+
+    // حذف المنتج نفسه
+    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
+
+    // تسجيل الحدث
+    logAdminActivity(req.admin.admin_id, `حذف منتج: ${productName}`, 'product', id, reason);
+
+    res.json({ success: true, message: 'تم حذف المنتج بنجاح' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
