@@ -219,6 +219,210 @@
     background: none; border: none; color: #dc2626;
     font-size: 15px; cursor: pointer; padding: 4px 6px; flex-shrink: 0;
   }
+
+  /* ===== أنماط حذف المنتجات ===== */
+  .approved-products-section {
+    margin-bottom: 20px;
+  }
+  .approved-section-header {
+    padding: 0 0 12px 0;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .approved-section-header h3 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+  .approved-section-header .count {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .product-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .product-card-info {
+    flex: 1;
+  }
+  .product-card-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1f2937;
+    margin-bottom: 4px;
+  }
+  .product-card-meta {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 2px;
+  }
+  .product-card-status {
+    display: inline-block;
+    background: #f0fdf4;
+    color: #15803d;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .product-card-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .btn-delete-product {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-delete-product:hover {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
+  }
+
+  /* ===== موديل حذف المنتج ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+  .modal-content {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 450px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+  .modal-header {
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 12px;
+  }
+  .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #dc2626;
+    font-weight: 700;
+  }
+  .modal-body {
+    margin-bottom: 20px;
+  }
+  .product-delete-info {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .product-delete-info p {
+    margin: 0 0 6px 0;
+    color: #6b7280;
+  }
+  .product-delete-info p strong {
+    color: #1f2937;
+  }
+  .product-delete-info code {
+    background: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+  }
+  .delete-reason-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 12px;
+  }
+  .delete-reason-textarea::placeholder {
+    color: #9ca3af;
+  }
+  .delete-reason-textarea:focus {
+    outline: none;
+    border-color: #dc2626;
+    background: #fef2f2;
+  }
+  .modal-warning {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #fecaca;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #991b1b;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-confirm-delete {
+    flex: 1;
+    padding: 12px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-confirm-delete:hover:not(:disabled) {
+    background: #b91c1c;
+  }
+  .btn-confirm-delete:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+  }
+  .btn-cancel-delete {
+    flex: 1;
+    padding: 12px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-cancel-delete:hover {
+    background: #e5e7eb;
+  }
 </style>
 </head>
 <body>
@@ -250,9 +454,64 @@
 
   <!-- المنتجات -->
   <div id="panel-products" class="panel">
-    <div id="productsLoading" class="loading">جارٍ التحميل...</div>
-    <div id="productsList"></div>
-    <div id="productsEmpty" class="empty-state" style="display:none;">لا توجد منتجات بانتظار الموافقة 🎉</div>
+    <!-- قسم المنتجات المعلقة -->
+    <div class="approved-products-section">
+      <div class="approved-section-header">
+        <h3>⏳ المنتجات بانتظار الموافقة</h3>
+        <div class="count">يتم التحميل...</div>
+      </div>
+      <div id="productsLoading" class="loading">جارٍ التحميل...</div>
+      <div id="productsList"></div>
+      <div id="productsEmpty" class="empty-state" style="display:none;">لا توجد منتجات بانتظار الموافقة 🎉</div>
+    </div>
+
+    <!-- فاصل -->
+    <div style="height: 1px; background: #e5e7eb; margin: 20px 0;"></div>
+
+    <!-- قسم المنتجات المعتمدة (للحذف) -->
+    <div class="approved-products-section" id="approvedProductsSection" style="display: none;">
+      <div class="approved-section-header">
+        <h3>✅ المنتجات المعتمدة (حذف)</h3>
+        <div class="count"><span id="approvedCount">0</span> منتج</div>
+      </div>
+      <div id="approvedProductsLoading" class="loading" style="display: none;">جارٍ التحميل...</div>
+      <div id="approvedProductsList"></div>
+      <div id="approvedProductsEmpty" class="empty-state" style="display:none;">لا توجد منتجات معتمدة 🎉</div>
+    </div>
+  </div>
+
+  <!-- موديل حذف المنتج -->
+  <div class="modal-overlay" id="deleteProductModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚠️ حذف المنتج</h3>
+      </div>
+      
+      <div class="modal-body">
+        <div class="product-delete-info">
+          <p>المنتج: <strong id="deleteProductName"></strong></p>
+          <p>المعرّف: <code id="deleteProductId"></code></p>
+        </div>
+
+        <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #374151;">
+          سبب الحذف <span style="color: #dc2626;">*</span>
+        </label>
+        <textarea 
+          id="deleteReasonText" 
+          class="delete-reason-textarea"
+          placeholder="مثال: منتج مكرر، صورة غير واضحة، معلومات غير صحيحة...">
+        </textarea>
+
+        <div class="modal-warning">
+          ⚠️ <strong>تحذير مهم:</strong> هذه العملية نهائية ولا يمكن التراجع عنها. سيتم حذف المنتج والصور والتسعير بشكل دائم.
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-confirm-delete" id="confirmDeleteBtn">🗑️ تأكيد الحذف</button>
+        <button class="btn-cancel-delete" id="cancelDeleteBtn">إلغاء</button>
+      </div>
+    </div>
   </div>
 
   <!-- الأسعار -->
@@ -707,8 +966,140 @@
     }
   }
 
+  // ===== حذف المنتجات المعتمدة =====
+
+  let currentDeleteProductId = null;
+
+  async function loadApprovedProducts() {
+    document.getElementById('approvedProductsLoading').style.display = 'block';
+    document.getElementById('approvedProductsList').innerHTML = '';
+    document.getElementById('approvedProductsEmpty').style.display = 'none';
+
+    // تحميل المنتجات المعتمدة
+    const data = await apiCall('/api/admin/pending-products');
+
+    document.getElementById('approvedProductsLoading').style.display = 'none';
+
+    if (!data || !data.success) {
+      console.log('تم تحميل المنتجات بنجاح لكن بدون بيانات');
+      return;
+    }
+
+    // تصفية المنتجات المعتمدة فقط
+    const approvedProducts = (data.products || []).filter(p => p.approval_status === 'approved');
+
+    if (approvedProducts.length === 0) {
+      document.getElementById('approvedProductsEmpty').style.display = 'block';
+      document.getElementById('approvedProductsSection').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('approvedProductsSection').style.display = 'block';
+    document.getElementById('approvedCount').textContent = approvedProducts.length;
+
+    const listEl = document.getElementById('approvedProductsList');
+    approvedProducts.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+
+      const createdDate = new Date(product.created_at).toLocaleDateString('ar-DZ');
+
+      card.innerHTML = `
+        <div class="product-card-info">
+          <div class="product-card-name">${escapeHtml(product.name)}</div>
+          <div class="product-card-meta">
+            🏬 ${escapeHtml(product.store_name || 'غير محدد')} · 👤 ${escapeHtml(product.full_name || 'غير محدد')}
+          </div>
+          <div class="product-card-meta">
+            📅 ${createdDate} · 🔖 ${escapeHtml(product.oem_number || 'بدون OEM')}
+          </div>
+          ${product.description ? `<div class="product-card-meta">📝 ${escapeHtml(product.description.substring(0, 80))}</div>` : ''}
+          <div class="product-card-status">✓ معتمد</div>
+        </div>
+        <div class="product-card-actions">
+          <button class="btn-delete-product" onclick="openDeleteProductModal('${product.id}', '${escapeHtml(product.name)}')">
+            🗑️ حذف
+          </button>
+        </div>
+      `;
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function openDeleteProductModal(productId, productName) {
+    currentDeleteProductId = productId;
+    document.getElementById('deleteProductName').textContent = productName;
+    document.getElementById('deleteProductId').textContent = productId;
+    document.getElementById('deleteReasonText').value = '';
+    document.getElementById('deleteProductModal').classList.add('open');
+    document.getElementById('deleteReasonText').focus();
+  }
+
+  function closeDeleteProductModal() {
+    document.getElementById('deleteProductModal').classList.remove('open');
+    currentDeleteProductId = null;
+  }
+
+  async function confirmDeleteProduct() {
+    const reason = document.getElementById('deleteReasonText').value.trim();
+
+    if (!reason) {
+      showToast('يجب إدخال سبب الحذف');
+      return;
+    }
+
+    if (!confirm('هل أنت متأكد تماماً؟ هذه العملية نهائية ولا يمكن التراجع عنها!')) {
+      return;
+    }
+
+    // تعطيل الزر أثناء الحذف
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '⏳ جاري الحذف...';
+
+    const data = await apiCall('/api/admin/delete-product/' + currentDeleteProductId, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = originalText;
+
+    if (data && data.success) {
+      showToast('✅ تم حذف المنتج بنجاح');
+      closeDeleteProductModal();
+      loadApprovedProducts(); // إعادة تحميل القائمة
+    } else {
+      showToast('❌ ' + (data?.error || 'فشل الحذف'));
+    }
+  }
+
+  // ربط أزرار الموديل
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('deleteProductModal');
+    
+    document.getElementById('confirmDeleteBtn').onclick = confirmDeleteProduct;
+    document.getElementById('cancelDeleteBtn').onclick = closeDeleteProductModal;
+
+    // إغلاق الموديل عند الضغط خارجه
+    modal.onclick = (e) => {
+      if (e.target === modal) closeDeleteProductModal();
+    };
+
+    // إغلاق الموديل بـ Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) {
+        closeDeleteProductModal();
+      }
+    });
+  });
+
   // تحميل أولي
   loadSupplierRequests();
+  loadApprovedProducts();
 </script>
 
 </body>
