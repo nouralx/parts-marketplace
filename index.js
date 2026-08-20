@@ -574,14 +574,13 @@ app.get('/api/catalog/:id', optionalUserAuth, async (req, res) => {
     const imgs = await pool.query(`SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY sort_order`, [id]);
     product.images = imgs.rows.map(r => r.image_url);
 
-    // 🔐 إذا لم يكن هناك مستخدم مسجل دخول: أخفِ البائعين تماماً
     if (!req.user) {
       const cnt = await pool.query(
         `SELECT COUNT(*) FROM product_vehicle_pricing WHERE product_id = $1 AND approval_status = 'approved' AND is_available = true`,
         [id]);
       product.offers_count = parseInt(cnt.rows[0].count);
-      product.offers = []; // ← تأكد من أنها مصفوفة فارغة وليس null
-      product.login_required = true; // ← علامة واضحة تقول: يجب التسجيل
+      product.offers = null;
+      product.login_required = true;
       return res.json({ success: true, product });
     }
 
@@ -599,39 +598,6 @@ app.get('/api/catalog/:id', optionalUserAuth, async (req, res) => {
     product.offers = offers.rows;
     product.login_required = false;
     res.json({ success: true, product });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============ إندبوينت حماية: جلب البائعين (يتطلب تسجيل دخول إلزامي) ============
-
-app.get('/api/product-suppliers/:productId', checkUserAuth, async (req, res) => {
-  const { productId } = req.params;
-  
-  try {
-    // تأكد من أن المنتج موجود ومعتمد
-    const productResult = await pool.query(
-      `SELECT id FROM products WHERE id = $1 AND approval_status = 'approved'`,
-      [productId]);
-    
-    if (productResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'المنتج غير موجود' });
-    }
-
-    // جلب البائعين فقط للمستخدمين المسجلين
-    const suppliers = await pool.query(
-      `SELECT pvp.id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type,
-              vr.make, vr.model, vr.year_start, vr.year_end,
-              s.store_name, s.wilaya, s.is_verified, pr.phone
-       FROM product_vehicle_pricing pvp
-       JOIN vehicles_reference vr ON vr.id = pvp.vehicle_id
-       JOIN suppliers s ON s.id = pvp.supplier_id
-       JOIN profiles pr ON pr.id = s.user_id
-       WHERE pvp.product_id = $1 AND pvp.approval_status = 'approved' AND pvp.is_available = true
-       ORDER BY pvp.price ASC`, [productId]);
-
-    res.json({ success: true, suppliers: suppliers.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -821,7 +787,26 @@ app.delete('/api/supplier/listings/:id', checkUserAuth, async (req, res) => {
 });
 
 // حذف منتج مقترح مرفوض فقط (نحذف الصور المرتبطة أولاً لتفادي مشاكل المفتاح الأجنبي)
+app.delete('/api/supplier/proposed-products/:id', checkUserAuth, async (req, res) => {
+  if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
+  const { id } = req.params;
+  try {
+    const supplierId = await getSupplierId(req.user.profile_id);
+    if (!supplierId) return res.status(404).json({ success: false, error: 'لم يتم العثور على ملف المورّد' });
 
+    const check = await pool.query(
+      `SELECT id FROM products WHERE id = $1 AND proposed_by_supplier_id = $2 AND approval_status = 'rejected'`,
+      [id, supplierId]);
+    if (check.rows.length === 0) return res.status(404).json({ success: false, error: 'لا يمكن حذف هذا الاقتراح (غير موجود، ليس ملكك، أو غير مرفوض)' });
+
+    await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
+    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
+
+    res.json({ success: true, message: 'تم حذف الاقتراح' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // ============ نظام الطلبات (Orders) ============
 
@@ -1256,12 +1241,67 @@ app.get('/api/admin/pending-products', checkAdminAuth, requirePermission('can_ma
        ORDER BY p.created_at ASC`
     );
 
-    for (const product of result.rows) {
+    // ⚡ تحسين: جلب جميع الصور دفعة واحدة بدلاً من استعلام لكل منتج
+    const productIds = result.rows.map(p => p.id);
+    let images = {};
+    
+    if (productIds.length > 0) {
       const imagesResult = await pool.query(
-        `SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY sort_order`,
-        [product.id]
+        `SELECT product_id, image_url FROM product_images 
+         WHERE product_id = ANY($1::int[]) 
+         ORDER BY product_id, sort_order`,
+        [productIds]
       );
-      product.images = imagesResult.rows.map(r => r.image_url);
+      
+      for (const img of imagesResult.rows) {
+        if (!images[img.product_id]) images[img.product_id] = [];
+        images[img.product_id].push(img.image_url);
+      }
+    }
+
+    // إضافة الصور لكل منتج
+    for (const product of result.rows) {
+      product.images = images[product.id] || [];
+    }
+
+    res.json({ success: true, products: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============ إندبوينت: جلب جميع المنتجات المعتمدة (للكتالوج) ============
+app.get('/api/admin/all-approved-products', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.description, p.oem_number, p.category, p.created_at, p.approval_status
+       FROM products p
+       WHERE p.approval_status = 'approved'
+       ORDER BY p.created_at DESC`
+    );
+
+    // جلب جميع الصور دفعة واحدة
+    const productIds = result.rows.map(p => p.id);
+    let images = {};
+    
+    if (productIds.length > 0) {
+      const imagesResult = await pool.query(
+        `SELECT product_id, image_url FROM product_images 
+         WHERE product_id = ANY($1::int[]) 
+         ORDER BY product_id, sort_order`,
+        [productIds]
+      );
+      
+      for (const img of imagesResult.rows) {
+        if (!images[img.product_id]) images[img.product_id] = [];
+        images[img.product_id].push(img.image_url);
+      }
+    }
+
+    // إضافة الصور لكل منتج وتجميع URLs
+    for (const product of result.rows) {
+      product.images = images[product.id] || [];
+      product.image_urls = product.images.join(',');
     }
 
     res.json({ success: true, products: result.rows });
@@ -1288,43 +1328,6 @@ app.post('/api/admin/review-product', checkAdminAuth, requirePermission('can_man
     );
     res.json({ success: true, message: 'تم تحديث حالة المنتج' });
     logAdminActivity(req.admin.admin_id, decision === 'approved' ? 'موافقة على منتج' : 'رفض منتج', 'product', product_id, note);
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============ 🔐 حذف المنتجات (Admin فقط) ============
-
-app.delete('/api/admin/delete-product/:id', checkAdminAuth, requirePermission('can_delete_products'), async (req, res) => {
-  const { id } = req.params;
-  const { reason } = req.body;
-
-  if (!reason || !reason.trim()) {
-    return res.status(400).json({ success: false, error: 'يجب تحديد سبب الحذف' });
-  }
-
-  try {
-    // تأكد من وجود المنتج
-    const productCheck = await pool.query(`SELECT id, name FROM products WHERE id = $1`, [id]);
-    if (productCheck.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'المنتج غير موجود' });
-    }
-
-    const productName = productCheck.rows[0].name;
-
-    // حذف الصور أولاً
-    await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
-
-    // حذف تسعير المنتج
-    await pool.query(`DELETE FROM product_vehicle_pricing WHERE product_id = $1`, [id]);
-
-    // حذف المنتج نفسه
-    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
-
-    // تسجيل الحدث
-    logAdminActivity(req.admin.admin_id, `حذف منتج: ${productName}`, 'product', id, reason);
-
-    res.json({ success: true, message: 'تم حذف المنتج بنجاح' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1485,6 +1488,136 @@ app.post('/sms/confirm', checkGatewaySecret, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ حذف المنتجات (للأدمن فقط) ============
+
+app.delete('/api/admin/delete-product/:id', checkAdminAuth, requirePermission('can_delete_products'), async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  if (!reason || reason.trim().length === 0) {
+    return res.status(400).json({ success: false, error: 'يجب توفير سبب الحذف' });
+  }
+
+  try {
+    // التحقق من أن المنتج موجود ومعتمد
+    const productResult = await pool.query(
+      `SELECT id, name FROM products WHERE id = $1 AND approval_status = 'approved'`,
+      [id]
+    );
+
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'المنتج غير موجود أو غير معتمد' });
+    }
+
+    const productName = productResult.rows[0].name;
+
+    // حذف الصور المرتبطة بالمنتج
+    await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
+
+    // حذف جميع العروض المرتبطة بالمنتج (listings)
+    await pool.query(`DELETE FROM product_vehicle_pricing WHERE product_id = $1`, [id]);
+
+    // حذف جميع الطلبات المرتبطة بالمنتج
+    const ordersResult = await pool.query(
+      `DELETE FROM order_items WHERE pvp_id IN 
+       (SELECT id FROM product_vehicle_pricing WHERE product_id = $1)
+       RETURNING order_id`,
+      [id]
+    );
+
+    // حذف الطلبات الفارغة (التي بدون عناصر)
+    await pool.query(
+      `DELETE FROM orders WHERE id NOT IN (SELECT DISTINCT order_id FROM order_items)`
+    );
+
+    // حذف المنتج نفسه
+    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
+
+    // تسجيل العملية في السجل
+    await pool.query(
+      `INSERT INTO admin_activity_log (admin_id, action_type, details) 
+       VALUES ($1, $2, $3)`,
+      [req.user.profile_id, 'delete_product', `حذف المنتج: ${productName} | السبب: ${reason}`]
+    );
+
+    res.json({ success: true, message: 'تم حذف المنتج بنجاح' });
+  } catch (err) {
+    console.error('خطأ في حذف المنتج:', err);
+    res.status(500).json({ success: false, error: 'حدث خطأ أثناء حذف المنتج: ' + err.message });
+  }
+});
+
+// ============ حذف منتجات متعددة (للأدمن فقط) ============
+
+app.post('/api/admin/delete-products-bulk', checkAdminAuth, requirePermission('can_delete_products'), async (req, res) => {
+  const { productIds, reason } = req.body;
+
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    return res.status(400).json({ success: false, error: 'يجب اختيار منتج واحد على الأقل' });
+  }
+
+  if (!reason || reason.trim().length === 0) {
+    return res.status(400).json({ success: false, error: 'يجب توفير سبب الحذف' });
+  }
+
+  try {
+    let deletedCount = 0;
+    const deletedNames = [];
+
+    // حذف كل منتج
+    for (const id of productIds) {
+      const productResult = await pool.query(
+        `SELECT id, name FROM products WHERE id = $1 AND approval_status = 'approved'`,
+        [id]
+      );
+
+      if (productResult.rows.length === 0) continue;
+
+      deletedNames.push(productResult.rows[0].name);
+
+      // حذف الصور
+      await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
+
+      // حذف العروض
+      await pool.query(`DELETE FROM product_vehicle_pricing WHERE product_id = $1`, [id]);
+
+      // حذف الطلبات
+      await pool.query(
+        `DELETE FROM order_items WHERE pvp_id IN 
+         (SELECT id FROM product_vehicle_pricing WHERE product_id = $1)`,
+        [id]
+      );
+
+      // حذف المنتج
+      await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
+
+      deletedCount++;
+    }
+
+    // حذف الطلبات الفارغة
+    await pool.query(
+      `DELETE FROM orders WHERE id NOT IN (SELECT DISTINCT order_id FROM order_items)`
+    );
+
+    // تسجيل العملية
+    await pool.query(
+      `INSERT INTO admin_activity_log (admin_id, action_type, details) 
+       VALUES ($1, $2, $3)`,
+      [req.user.profile_id, 'delete_products_bulk', `حذف ${deletedCount} منتج(ات): ${deletedNames.join(', ')} | السبب: ${reason}`]
+    );
+
+    res.json({ 
+      success: true, 
+      message: `تم حذف ${deletedCount} منتج بنجاح`,
+      deleted_count: deletedCount,
+      deleted_names: deletedNames
+    });
+  } catch (err) {
+    console.error('خطأ في حذف منتجات متعددة:', err);
+    res.status(500).json({ success: false, error: 'حدث خطأ أثناء حذف المنتجات: ' + err.message });
   }
 });
 
