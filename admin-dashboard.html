@@ -872,30 +872,43 @@
     document.getElementById('catalogEmpty').style.display = 'none';
     document.getElementById('catalogSearchInput').value = '';
 
-    // جلب المنتجات المعتمدة
-    const res = await fetch(`${API_BASE}/api/admin/all-approved-products`);
-    const data = await res.json();
+    try {
+      // جلب المنتجات المعتمدة مع الـ token
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`${API_BASE}/api/admin/all-approved-products`, {
+        headers: {
+          'x-admin-token': token
+        }
+      });
+      
+      const data = await res.json();
 
-    document.getElementById('catalogLoading').style.display = 'none';
+      document.getElementById('catalogLoading').style.display = 'none';
 
-    if (!data.success || !data.products) {
-      console.error('فشل تحميل المنتجات');
+      if (!data.success || !data.products) {
+        console.error('فشل تحميل المنتجات:', data.error);
+        document.getElementById('catalogEmpty').style.display = 'block';
+        return;
+      }
+
+      allCatalogProducts = data.products;
+
+      if (allCatalogProducts.length === 0) {
+        document.getElementById('catalogEmpty').style.display = 'block';
+        document.getElementById('catalogProductCount').textContent = '0';
+        return;
+      }
+
+      document.getElementById('catalogProductCount').textContent = allCatalogProducts.length;
+      renderCatalogProducts(allCatalogProducts);
+
+      // إضافة حدث البحث
+      document.getElementById('catalogSearchInput').addEventListener('input', filterCatalogProducts);
+    } catch (err) {
+      console.error('خطأ في تحميل الكتالوج:', err);
+      document.getElementById('catalogLoading').style.display = 'none';
       document.getElementById('catalogEmpty').style.display = 'block';
-      return;
     }
-
-    allCatalogProducts = data.products;
-
-    if (allCatalogProducts.length === 0) {
-      document.getElementById('catalogEmpty').style.display = 'block';
-      return;
-    }
-
-    document.getElementById('catalogProductCount').textContent = allCatalogProducts.length;
-    renderCatalogProducts(allCatalogProducts);
-
-    // إضافة حدث البحث
-    document.getElementById('catalogSearchInput').addEventListener('input', filterCatalogProducts);
   }
 
   function renderCatalogProducts(products) {

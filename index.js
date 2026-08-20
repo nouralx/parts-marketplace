@@ -1273,12 +1273,20 @@ app.get('/api/admin/pending-products', checkAdminAuth, requirePermission('can_ma
 // ============ إندبوينت: جلب جميع المنتجات المعتمدة (للكتالوج) ============
 app.get('/api/admin/all-approved-products', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {
   try {
+    // جلب المنتجات المعتمدة مع معلومات الموردين
     const result = await pool.query(
-      `SELECT p.id, p.name, p.description, p.oem_number, p.category, p.created_at, p.approval_status
+      `SELECT p.id, p.name, p.description, p.oem_number, p.category, p.created_at, p.approval_status,
+              COUNT(DISTINCT pvp.id) as supplier_count
        FROM products p
+       LEFT JOIN product_vehicle_pricing pvp ON pvp.product_id = p.id AND pvp.approval_status = 'approved'
        WHERE p.approval_status = 'approved'
+       GROUP BY p.id, p.name, p.description, p.oem_number, p.category, p.created_at, p.approval_status
        ORDER BY p.created_at DESC`
     );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: true, products: [] });
+    }
 
     // جلب جميع الصور دفعة واحدة
     const productIds = result.rows.map(p => p.id);
@@ -1306,6 +1314,7 @@ app.get('/api/admin/all-approved-products', checkAdminAuth, requirePermission('c
 
     res.json({ success: true, products: result.rows });
   } catch (err) {
+    console.error('Error in /api/admin/all-approved-products:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
