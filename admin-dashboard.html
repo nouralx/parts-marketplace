@@ -249,6 +249,18 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 10px;
+    transition: background-color 0.2s;
+  }
+  .product-card.selected {
+    background: #fef3c7;
+    border-color: #fbbf24;
+  }
+  .product-card-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+    flex-shrink: 0;
   }
   .product-card-info {
     flex: 1;
@@ -423,6 +435,120 @@
   .btn-cancel-delete:hover {
     background: #e5e7eb;
   }
+
+  /* ===== أنماط الكتالوج ===== */
+  #catalogList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  
+  .catalog-product-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .catalog-product-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+    border-color: #d1d5db;
+  }
+  
+  .catalog-product-image {
+    width: 100%;
+    height: 140px;
+    background: #f3f4f6;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .catalog-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .catalog-product-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    font-size: 32px;
+  }
+  
+  .catalog-product-info {
+    padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .catalog-product-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+    line-height: 1.3;
+    min-height: 26px;
+  }
+  
+  .catalog-product-oem {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 4px;
+    font-family: monospace;
+  }
+  
+  .catalog-product-desc {
+    font-size: 11px;
+    color: #9ca3af;
+    line-height: 1.3;
+    margin-bottom: 8px;
+    flex: 1;
+  }
+  
+  .catalog-product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid #f3f4f6;
+    font-size: 11px;
+    color: #6b7280;
+  }
+  
+  .catalog-product-status {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    #catalogList {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    #catalogList {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 </style>
 </head>
 <body>
@@ -437,6 +563,7 @@
 
 <div class="tabs">
   <div class="tab active" id="tab-suppliers" onclick="switchTab('suppliers')">طلبات الموردين</div>
+  <div class="tab" id="tab-catalog" onclick="switchTab('catalog')">📺 الكتالوج</div>
   <div class="tab" id="tab-products" onclick="switchTab('products')">المنتجات</div>
   <div class="tab" id="tab-pricing" onclick="switchTab('pricing')">الأسعار</div>
   <div class="tab" id="tab-users" onclick="switchTab('users')">المستخدمون</div>
@@ -450,6 +577,35 @@
     <div id="suppliersLoading" class="loading">جارٍ التحميل...</div>
     <div id="suppliersList"></div>
     <div id="suppliersEmpty" class="empty-state" style="display:none;">لا توجد طلبات معلقة حالياً 🎉</div>
+  </div>
+
+  <!-- 📺 الكتالوج (عرض الزبون) -->
+  <div id="panel-catalog" class="panel">
+    <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+      <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 16px;">📺 عرض الكتالوج</h3>
+      <p style="margin: 0; color: #6b7280; font-size: 13px;">عرض كل المنتجات المعتمدة كما يراها الزبون</p>
+    </div>
+
+    <!-- شريط البحث -->
+    <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+      <input 
+        type="text" 
+        id="catalogSearchInput" 
+        placeholder="🔍 ابحث عن منتج (الاسم، OEM، الوصف)..."
+        style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit;"
+      >
+    </div>
+
+    <!-- عدد المنتجات -->
+    <div style="background: #fff; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; border-right: 3px solid #2563eb;">
+      <span style="font-size: 13px; color: #6b7280;">📊 عدد المنتجات المعتمدة: </span>
+      <span id="catalogProductCount" style="font-size: 16px; font-weight: 700; color: #111827;">0</span>
+    </div>
+
+    <!-- قائمة المنتجات -->
+    <div id="catalogLoading" class="loading">جارٍ التحميل...</div>
+    <div id="catalogList"></div>
+    <div id="catalogEmpty" class="empty-state" style="display:none;">لا توجد منتجات معتمدة حالياً</div>
   </div>
 
   <!-- المنتجات -->
@@ -474,6 +630,23 @@
         <h3>✅ المنتجات المعتمدة (حذف)</h3>
         <div class="count"><span id="approvedCount">0</span> منتج</div>
       </div>
+
+      <!-- شريط البحث والحذف الجماعي -->
+      <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+        <input 
+          type="text" 
+          id="productsSearchInput" 
+          placeholder="🔍 ابحث عن منتج (الاسم، OEM، البائع)..."
+          style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px;"
+        >
+        <button 
+          id="deleteSelectedBtn" 
+          onclick="prepareDeleteMultiple()"
+          style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: none;">
+          🗑️ حذف المختار (<span id="selectedCount">0</span>)
+        </button>
+      </div>
+
       <div id="approvedProductsLoading" class="loading" style="display: none;">جارٍ التحميل...</div>
       <div id="approvedProductsList"></div>
       <div id="approvedProductsEmpty" class="empty-state" style="display:none;">لا توجد منتجات معتمدة 🎉</div>
@@ -607,6 +780,7 @@
     document.getElementById('panel-' + name).classList.add('active');
 
     if (name === 'suppliers') loadSupplierRequests();
+    if (name === 'catalog') loadCatalog();
     if (name === 'products') loadPendingProducts();
     if (name === 'pricing') loadPendingPricing();
     if (name === 'users') loadUsers();
@@ -686,6 +860,110 @@
     } else {
       showToast(data?.error || 'فشل تنفيذ الإجراء');
     }
+  }
+
+  // ===== الكتالوج (عرض الزبون) =====
+  
+  let allCatalogProducts = [];
+
+  async function loadCatalog() {
+    document.getElementById('catalogLoading').style.display = 'block';
+    document.getElementById('catalogList').innerHTML = '';
+    document.getElementById('catalogEmpty').style.display = 'none';
+    document.getElementById('catalogSearchInput').value = '';
+
+    // جلب المنتجات المعتمدة
+    const res = await fetch(`${API_BASE}/api/admin/all-approved-products`);
+    const data = await res.json();
+
+    document.getElementById('catalogLoading').style.display = 'none';
+
+    if (!data.success || !data.products) {
+      console.error('فشل تحميل المنتجات');
+      document.getElementById('catalogEmpty').style.display = 'block';
+      return;
+    }
+
+    allCatalogProducts = data.products;
+
+    if (allCatalogProducts.length === 0) {
+      document.getElementById('catalogEmpty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('catalogProductCount').textContent = allCatalogProducts.length;
+    renderCatalogProducts(allCatalogProducts);
+
+    // إضافة حدث البحث
+    document.getElementById('catalogSearchInput').addEventListener('input', filterCatalogProducts);
+  }
+
+  function renderCatalogProducts(products) {
+    const listEl = document.getElementById('catalogList');
+    listEl.innerHTML = '';
+
+    if (products.length === 0) {
+      document.getElementById('catalogEmpty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('catalogEmpty').style.display = 'none';
+
+    products.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'catalog-product-card';
+      
+      const images = product.image_urls ? product.image_urls.split(',').filter(img => img.trim()) : [];
+      const firstImage = images.length > 0 ? images[0].trim() : null;
+      const createdDate = new Date(product.created_at).toLocaleDateString('ar-DZ', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+
+      let imageHtml = '';
+      if (firstImage) {
+        imageHtml = `<img src="${firstImage}" alt="${escapeHtml(product.name)}" onerror="this.parentElement.innerHTML='<div class=\\'catalog-product-image-placeholder\\'>📷</div>'">`;
+      } else {
+        imageHtml = '<div class="catalog-product-image-placeholder">📷</div>';
+      }
+
+      card.innerHTML = `
+        <div class="catalog-product-image">
+          ${imageHtml}
+        </div>
+        <div class="catalog-product-info">
+          <div class="catalog-product-name">${escapeHtml(product.name)}</div>
+          ${product.oem_number ? `<div class="catalog-product-oem">OEM: ${escapeHtml(product.oem_number)}</div>` : ''}
+          ${product.description ? `<div class="catalog-product-desc">${escapeHtml(product.description.substring(0, 60))}...</div>` : ''}
+          <div class="catalog-product-meta">
+            <span>✓ معتمد</span>
+            <span style="font-size: 10px; color: #9ca3af;">${createdDate}</span>
+          </div>
+        </div>
+      `;
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function filterCatalogProducts() {
+    const searchText = document.getElementById('catalogSearchInput').value.toLowerCase().trim();
+
+    if (!searchText) {
+      renderCatalogProducts(allCatalogProducts);
+      document.getElementById('catalogProductCount').textContent = allCatalogProducts.length;
+      return;
+    }
+
+    const filtered = allCatalogProducts.filter(p => 
+      p.name.toLowerCase().includes(searchText) ||
+      (p.oem_number && p.oem_number.toLowerCase().includes(searchText)) ||
+      (p.description && p.description.toLowerCase().includes(searchText))
+    );
+
+    renderCatalogProducts(filtered);
+    document.getElementById('catalogProductCount').textContent = filtered.length;
   }
 
   // ===== المنتجات المعلقة =====
@@ -970,6 +1248,9 @@
 
   let currentDeleteProductId = null;
 
+  // متغير عام لحفظ المنتجات المعتمدة
+  let allApprovedProducts = [];
+
   async function loadApprovedProducts() {
     document.getElementById('approvedProductsLoading').style.display = 'block';
     document.getElementById('approvedProductsList').innerHTML = '';
@@ -986,25 +1267,43 @@
     }
 
     // تصفية المنتجات المعتمدة فقط
-    const approvedProducts = (data.products || []).filter(p => p.approval_status === 'approved');
+    allApprovedProducts = (data.products || []).filter(p => p.approval_status === 'approved');
 
-    if (approvedProducts.length === 0) {
+    if (allApprovedProducts.length === 0) {
       document.getElementById('approvedProductsEmpty').style.display = 'block';
       document.getElementById('approvedProductsSection').style.display = 'none';
       return;
     }
 
     document.getElementById('approvedProductsSection').style.display = 'block';
-    document.getElementById('approvedCount').textContent = approvedProducts.length;
+    document.getElementById('approvedCount').textContent = allApprovedProducts.length;
 
+    renderApprovedProducts(allApprovedProducts);
+
+    // إضافة حدث البحث
+    document.getElementById('productsSearchInput').addEventListener('input', filterProducts);
+  }
+
+  function renderApprovedProducts(products) {
     const listEl = document.getElementById('approvedProductsList');
-    approvedProducts.forEach(product => {
+    listEl.innerHTML = '';
+
+    if (products.length === 0) {
+      document.getElementById('approvedProductsEmpty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('approvedProductsEmpty').style.display = 'none';
+
+    products.forEach(product => {
       const card = document.createElement('div');
       card.className = 'product-card';
+      card.dataset.productId = product.id;
 
       const createdDate = new Date(product.created_at).toLocaleDateString('ar-DZ');
 
       card.innerHTML = `
+        <input type="checkbox" class="product-card-checkbox product-checkbox" data-id="${product.id}" onchange="updateDeleteButtonVisibility()">
         <div class="product-card-info">
           <div class="product-card-name">${escapeHtml(product.name)}</div>
           <div class="product-card-meta">
@@ -1023,8 +1322,111 @@
         </div>
       `;
 
+      // إضافة حدث الـ checkbox للتلوين
+      const checkbox = card.querySelector('.product-checkbox');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+        updateDeleteButtonVisibility();
+      });
+
       listEl.appendChild(card);
     });
+  }
+
+  function filterProducts() {
+    const searchText = document.getElementById('productsSearchInput').value.toLowerCase().trim();
+    
+    if (!searchText) {
+      renderApprovedProducts(allApprovedProducts);
+      return;
+    }
+
+    const filtered = allApprovedProducts.filter(p => 
+      p.name.toLowerCase().includes(searchText) ||
+      (p.oem_number && p.oem_number.toLowerCase().includes(searchText)) ||
+      (p.store_name && p.store_name.toLowerCase().includes(searchText)) ||
+      (p.full_name && p.full_name.toLowerCase().includes(searchText))
+    );
+
+    renderApprovedProducts(filtered);
+  }
+
+  function updateDeleteButtonVisibility() {
+    const selectedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const selectedCount = document.getElementById('selectedCount');
+
+    selectedCount.textContent = selectedCheckboxes.length;
+
+    if (selectedCheckboxes.length > 0) {
+      deleteBtn.style.display = 'block';
+    } else {
+      deleteBtn.style.display = 'none';
+    }
+  }
+
+  function prepareDeleteMultiple() {
+    const selectedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
+    
+    if (selectedCheckboxes.length === 0) {
+      showToast('❌ اختر منتج واحد على الأقل');
+      return;
+    }
+
+    const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+    const selectedNames = selectedIds.map(id => {
+      const product = allApprovedProducts.find(p => p.id === id);
+      return product ? escapeHtml(product.name) : 'غير معروف';
+    });
+
+    // فتح موديال حذف جماعي
+    const reasonInput = prompt(
+      `هل أنت متأكد من حذف ${selectedIds.length} منتج؟\n\n` +
+      `المنتجات المختارة:\n${selectedNames.slice(0, 5).join('\n')}${selectedNames.length > 5 ? '\n...' : ''}\n\n` +
+      `⚠️ أدخل سبب الحذف (إلزامي):`,
+      ''
+    );
+
+    if (reasonInput === null) return; // ألغى المستخدم
+
+    if (!reasonInput.trim()) {
+      showToast('❌ يجب إدخال سبب الحذف');
+      return;
+    }
+
+    if (!confirm(`⚠️ هذه العملية نهائية ولا يمكن التراجع عنها!\n\nهل أنت متأكد من حذف ${selectedIds.length} منتج؟`)) {
+      return;
+    }
+
+    deleteMultipleProducts(selectedIds, reasonInput.trim());
+  }
+
+  async function deleteMultipleProducts(productIds, reason) {
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const originalText = deleteBtn.textContent;
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = '⏳ جاري الحذف...';
+
+    const data = await apiCall('/api/admin/delete-products-bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds, reason })
+    });
+
+    deleteBtn.disabled = false;
+    deleteBtn.textContent = originalText;
+
+    if (data && data.success) {
+      showToast(`✅ تم حذف ${data.deleted_count} منتج بنجاح`);
+      loadApprovedProducts(); // إعادة تحميل
+      document.getElementById('productsSearchInput').value = '';
+    } else {
+      showToast('❌ ' + (data?.error || 'فشل الحذف'));
+    }
   }
 
   function openDeleteProductModal(productId, productName) {
