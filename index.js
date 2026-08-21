@@ -1319,6 +1319,69 @@ app.get('/api/admin/all-approved-products', checkAdminAuth, requirePermission('c
   }
 });
 
+// ============ إندبوينت: جلب موردي المنتج ============
+app.get('/api/admin/product-suppliers/:productId', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {
+  const { productId } = req.params;
+  
+  try {
+    const suppliers = await pool.query(
+      `SELECT pvp.id, pvp.price, pvp.quality_grade, pvp.brand, pvp.country_of_origin, pvp.delivery_type,
+              vr.make, vr.model, vr.year_start, vr.year_end,
+              s.store_name, s.wilaya, s.is_verified, pr.phone
+       FROM product_vehicle_pricing pvp
+       JOIN vehicles_reference vr ON vr.id = pvp.vehicle_id
+       JOIN suppliers s ON s.id = pvp.supplier_id
+       JOIN profiles pr ON pr.id = s.user_id
+       WHERE pvp.product_id = $1 AND pvp.approval_status = 'approved'
+       ORDER BY pvp.price ASC`, [productId]);
+
+    res.json({ success: true, suppliers: suppliers.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============ إندبوينت: حذف منتج واحد من كامل المنصة ============
+app.delete('/api/admin/products/:id', checkAdminAuth, requirePermission('can_delete_products'), async (req, res) => {
+  const { id } = req.params;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1️⃣ حذف الصور
+    await client.query('DELETE FROM product_images WHERE product_id = $1', [id]);
+
+    // 2️⃣ حذف القوائم السعرية (product_vehicle_pricing)
+    await client.query('DELETE FROM product_vehicle_pricing WHERE product_id = $1', [id]);
+
+    // 3️⃣ حذف المنتج نفسه
+    const result = await client.query('DELETE FROM products WHERE id = $1 RETURNING id', [id]);
+
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'المنتج غير موجود' });
+    }
+
+    // ✅ تسجيل في السجل
+    await client.query(
+      `INSERT INTO admin_activity_log (admin_id, action, details, note) 
+       VALUES ($1, $2, $3, $4)`,
+      [req.user.profile_id, 'delete_product', JSON.stringify({ product_id: id }), `تم حذف المنتج رقم ${id} بالكامل`]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({ success: true, message: 'تم حذف المنتج بنجاح' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('خطأ في حذف المنتج:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 app.post('/api/admin/review-product', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {
   const { product_id, decision, note } = req.body;
 
