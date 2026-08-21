@@ -1345,6 +1345,11 @@ app.get('/api/admin/product-suppliers/:productId', checkAdminAuth, requirePermis
 app.delete('/api/admin/products/:id', checkAdminAuth, requirePermission('can_delete_products'), async (req, res) => {
   const { id } = req.params;
 
+  // التحقق من وجود req.admin
+  if (!req.admin || !req.admin.admin_id) {
+    return res.status(401).json({ success: false, error: 'الجلسة منتهية' });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1367,7 +1372,7 @@ app.delete('/api/admin/products/:id', checkAdminAuth, requirePermission('can_del
     await client.query(
       `INSERT INTO admin_activity_log (admin_id, action, details, note) 
        VALUES ($1, $2, $3, $4)`,
-      [req.user.profile_id, 'delete_product', JSON.stringify({ product_id: id }), `تم حذف المنتج رقم ${id} بالكامل`]
+      [req.admin.admin_id, 'delete_product', JSON.stringify({ product_id: id }), `تم حذف المنتج رقم ${id} بالكامل`]
     );
 
     await client.query('COMMIT');
