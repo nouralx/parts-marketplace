@@ -1053,9 +1053,9 @@ function requirePermission(permissionName) {
 async function logAdminActivity(adminId, action, targetType, targetId, note) {
   try {
     await pool.query(
-      `INSERT INTO admin_activity_log (admin_id, action, target_type, target_id, note, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
-      [adminId, action, targetType, String(targetId), note || null]
+      `INSERT INTO admin_activity_log (admin_id, action, note)
+       VALUES ($1, $2, $3)`,
+      [adminId, action, note || null]
     );
   } catch (err) {
     console.error('فشل تسجيل نشاط الأدمن:', err.message);
@@ -1370,9 +1370,9 @@ app.delete('/api/admin/products/:id', checkAdminAuth, requirePermission('can_del
 
     // ✅ تسجيل في السجل
     await client.query(
-      `INSERT INTO admin_activity_log (admin_id, action, details, note) 
-       VALUES ($1, $2, $3, $4)`,
-      [req.admin.admin_id, 'delete_product', JSON.stringify({ product_id: id }), `تم حذف المنتج رقم ${id} بالكامل`]
+      `INSERT INTO admin_activity_log (admin_id, action, note) 
+       VALUES ($1, $2, $3)`,
+      [req.admin.admin_id, 'delete_product', `تم حذف المنتج رقم ${id} بالكامل`]
     );
 
     await client.query('COMMIT');
@@ -1615,9 +1615,9 @@ app.delete('/api/admin/delete-product/:id', checkAdminAuth, requirePermission('c
 
     // تسجيل العملية في السجل
     await pool.query(
-      `INSERT INTO admin_activity_log (admin_id, action_type, details) 
+      `INSERT INTO admin_activity_log (admin_id, action, note) 
        VALUES ($1, $2, $3)`,
-      [req.user.profile_id, 'delete_product', `حذف المنتج: ${productName} | السبب: ${reason}`]
+      [req.admin.admin_id, 'delete_product', `حذف المنتج: ${productName}`]
     );
 
     res.json({ success: true, message: 'تم حذف المنتج بنجاح' });
@@ -1681,9 +1681,9 @@ app.post('/api/admin/delete-products-bulk', checkAdminAuth, requirePermission('c
 
     // تسجيل العملية
     await pool.query(
-      `INSERT INTO admin_activity_log (admin_id, action_type, details) 
+      `INSERT INTO admin_activity_log (admin_id, action, note) 
        VALUES ($1, $2, $3)`,
-      [req.user.profile_id, 'delete_products_bulk', `حذف ${deletedCount} منتج(ات): ${deletedNames.join(', ')} | السبب: ${reason}`]
+      [req.admin.admin_id, 'delete_products_bulk', `حذف ${deletedCount} منتج(ات)`]
     );
 
     res.json({ 
