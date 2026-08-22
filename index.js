@@ -1249,7 +1249,6 @@ app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage
     const userName = userResult.rows[0].full_name;
 
     // 1️⃣ حذف جميع الطلبات والعناصر المتعلقة بالمستخدم
-    // حذف عناصر الطلبات أولاً
     const ordersResult = await client.query(
       'SELECT id FROM orders WHERE buyer_id = $1',
       [id]
@@ -1259,19 +1258,12 @@ app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage
       await client.query('DELETE FROM order_items WHERE order_id = $1', [order.id]);
     }
     
-    // ثم حذف الطلبات نفسها
     await client.query('DELETE FROM orders WHERE buyer_id = $1', [id]);
 
-    // 2️⃣ حذف جميع جلسات المستخدم
-    await client.query('DELETE FROM user_sessions WHERE user_id = $1', [id]);
-    
-    // 3️⃣ حذف من جلسات الإدارة إن كان أدمن
-    await client.query('DELETE FROM admin_sessions WHERE admin_id = $1', [id]);
-
-    // 4️⃣ حذف ملف المستخدم الشخصي
+    // 2️⃣ حذف ملف المستخدم الشخصي
     await client.query('DELETE FROM profiles WHERE id = $1', [id]);
 
-    // 5️⃣ تسجيل العملية
+    // 3️⃣ تسجيل العملية
     await client.query(
       `INSERT INTO admin_activity_log (admin_id, action, note) 
        VALUES ($1, $2, $3)`,
