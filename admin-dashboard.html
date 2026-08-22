@@ -778,6 +778,161 @@
       opacity: 0;
     }
   }
+
+  /* ===== نافذة تفاصيل المستخدم/المورد ===== */
+  .user-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .user-detail-modal.open {
+    display: flex;
+  }
+
+  .user-detail-content {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+
+  .user-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    background: #fff;
+  }
+
+  .user-detail-header h2 {
+    margin: 0;
+    font-size: 16px;
+    color: #111827;
+  }
+
+  .user-detail-body {
+    padding: 16px;
+  }
+
+  .user-detail-footer {
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-close {
+    flex: 1;
+    padding: 10px;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+
+  .btn-close:hover {
+    background: #e5e7eb;
+  }
+
+  .detail-section {
+    margin-bottom: 20px;
+  }
+
+  .detail-section h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .user-images-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .image-box {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .image-box label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .image-box img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #e5e7eb;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .info-item {
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .info-item label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .info-item p {
+    margin: 0;
+    font-size: 13px;
+    color: #111827;
+    font-weight: 500;
+    word-break: break-word;
+  }
+
+  .user-name-link {
+    cursor: pointer;
+    color: #2563eb;
+    text-decoration: underline;
+  }
+
+  .user-name-link:hover {
+    color: #1d4ed8;
+  }
 </style>
 </head>
 <body>
@@ -980,6 +1135,106 @@
     <div id="pricingLoading" class="loading">جارٍ التحميل...</div>
     <div id="pricingList"></div>
     <div id="pricingEmpty" class="empty-state" style="display:none;">لا توجد أسعار بانتظار الموافقة 🎉</div>
+  </div>
+
+  <!-- نافذة تفاصيل المستخدم/المورد -->
+  <div class="user-detail-modal" id="userDetailModal">
+    <div class="user-detail-content">
+      <div class="user-detail-header">
+        <h2 id="userDetailName"></h2>
+        <button onclick="closeUserDetail()" style="background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
+      </div>
+
+      <div class="user-detail-body">
+        <!-- الصور -->
+        <div class="detail-section">
+          <h3>📷 الصور</h3>
+          <div class="user-images-container">
+            <div class="image-box">
+              <label>صورة السجل</label>
+              <img id="recordImage" src="" alt="صورة السجل" onerror="this.src='data:image/svg+xml,<svg></svg>'">
+            </div>
+            <div class="image-box">
+              <label>صورة الدفع</label>
+              <img id="paymentImage" src="" alt="صورة الدفع" onerror="this.src='data:image/svg+xml,<svg></svg>'">
+            </div>
+          </div>
+        </div>
+
+        <!-- المعلومات الأساسية -->
+        <div class="detail-section">
+          <h3>ℹ️ المعلومات الأساسية</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>الاسم الكامل</label>
+              <p id="detailFullName">-</p>
+            </div>
+            <div class="info-item">
+              <label>اسم المستخدم</label>
+              <p id="detailUsername">-</p>
+            </div>
+            <div class="info-item">
+              <label>البريد الإلكتروني</label>
+              <p id="detailEmail">-</p>
+            </div>
+            <div class="info-item">
+              <label>رقم الهاتف</label>
+              <p id="detailPhone">-</p>
+            </div>
+            <div class="info-item">
+              <label>الدور</label>
+              <p id="detailRole">-</p>
+            </div>
+            <div class="info-item">
+              <label>الحالة</label>
+              <p id="detailStatus">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- معلومات المورد (إن كان موردًا) -->
+        <div class="detail-section" id="supplierSection" style="display:none;">
+          <h3>🏪 معلومات المورد</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>اسم المتجر</label>
+              <p id="detailStoreName">-</p>
+            </div>
+            <div class="info-item">
+              <label>الولاية</label>
+              <p id="detailWilaya">-</p>
+            </div>
+            <div class="info-item">
+              <label>التحقق</label>
+              <p id="detailVerified">-</p>
+            </div>
+            <div class="info-item">
+              <label>البطاقة الوطنية</label>
+              <p id="detailNationalId">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- تاريخ الإنشاء -->
+        <div class="detail-section">
+          <h3>📅 التواريخ</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>تاريخ الإنشاء</label>
+              <p id="detailCreatedAt">-</p>
+            </div>
+            <div class="info-item">
+              <label>آخر تحديث</label>
+              <p id="detailUpdatedAt">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="user-detail-footer">
+        <button class="btn-close" onclick="closeUserDetail()">إغلاق</button>
+      </div>
+    </div>
   </div>
 
   <!-- المستخدمون -->
@@ -1650,7 +1905,7 @@
 
       card.innerHTML = `
         <div class="card-header">
-          <div class="card-title">${escapeHtml(u.full_name)}</div>
+          <div class="card-title user-name-link" onclick="openUserDetail('${u.id}', '${escapeHtml(u.full_name)}')">${escapeHtml(u.full_name)}</div>
           <div>${roleBadge}</div>
         </div>
         <div class="card-sub">📞 ${escapeHtml(u.phone)} · 👤 ${escapeHtml(u.username)}</div>
@@ -1713,6 +1968,85 @@
       console.error('خطأ في حذف المستخدم:', err);
       showToast('❌ حدث خطأ في الحذف');
     }
+  }
+
+  // ===== تفاصيل المستخدم/المورد =====
+
+  async function openUserDetail(userId, userName) {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/user-detail/${userId}`, {
+        headers: {
+          'x-admin-token': localStorage.getItem('admin_token')
+        }
+      });
+
+      const data = await res.json();
+
+      if (!data.success || !data.user) {
+        showToast('❌ فشل تحميل البيانات');
+        return;
+      }
+
+      const user = data.user;
+
+      // ملء البيانات الأساسية
+      document.getElementById('userDetailName').textContent = escapeHtml(user.full_name || '-');
+      document.getElementById('detailFullName').textContent = escapeHtml(user.full_name || '-');
+      document.getElementById('detailUsername').textContent = escapeHtml(user.username || '-');
+      document.getElementById('detailEmail').textContent = escapeHtml(user.email || '-');
+      document.getElementById('detailPhone').textContent = escapeHtml(user.phone || '-');
+      document.getElementById('detailRole').textContent = escapeHtml(user.role || '-');
+      document.getElementById('detailStatus').textContent = user.is_active ? '✅ نشط' : '❌ معطل';
+
+      // التواريخ
+      if (user.created_at) {
+        const createdDate = new Date(user.created_at).toLocaleDateString('ar-DZ', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        document.getElementById('detailCreatedAt').textContent = createdDate;
+      }
+
+      if (user.updated_at) {
+        const updatedDate = new Date(user.updated_at).toLocaleDateString('ar-DZ', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        document.getElementById('detailUpdatedAt').textContent = updatedDate;
+      }
+
+      // الصور
+      if (user.record_image) {
+        document.getElementById('recordImage').src = user.record_image;
+      }
+      if (user.payment_image) {
+        document.getElementById('paymentImage').src = user.payment_image;
+      }
+
+      // معلومات المورد (إذا كان موردًا)
+      const supplierSection = document.getElementById('supplierSection');
+      if (user.store_name) {
+        supplierSection.style.display = 'block';
+        document.getElementById('detailStoreName').textContent = escapeHtml(user.store_name || '-');
+        document.getElementById('detailWilaya').textContent = escapeHtml(user.wilaya || '-');
+        document.getElementById('detailVerified').textContent = user.is_verified ? '✅ موثق' : '❌ غير موثق';
+        document.getElementById('detailNationalId').textContent = escapeHtml(user.national_id || '-');
+      } else {
+        supplierSection.style.display = 'none';
+      }
+
+      // فتح النافذة
+      document.getElementById('userDetailModal').classList.add('open');
+    } catch (err) {
+      console.error('خطأ في تحميل التفاصيل:', err);
+      showToast('❌ حدث خطأ في تحميل البيانات');
+    }
+  }
+
+  function closeUserDetail() {
+    document.getElementById('userDetailModal').classList.remove('open');
   }
 
   // ===== المحفوظات (سجل نشاط الأدمن) =====
