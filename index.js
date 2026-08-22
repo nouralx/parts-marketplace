@@ -1247,31 +1247,30 @@ app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage
     }
 
     const userName = userResult.rows[0].full_name;
-    const authId = userResult.rows[0].id;
 
     // 1️⃣ حذف جميع الطلبات والعناصر المتعلقة بالمستخدم
-    const ordersResult = await client.query('SELECT id FROM orders WHERE user_id = $1', [id]);
-    for (const order of ordersResult.rows) {
-      await client.query('DELETE FROM order_items WHERE order_id = $1', [order.id]);
-      await client.query('DELETE FROM orders WHERE id = $1', [order.id]);
-    }
+    // أولاً نجد جميع الطلبات المرتبطة بالمستخدم
+    await client.query(`
+      DELETE FROM order_items 
+      WHERE order_id IN (
+        SELECT id FROM orders 
+        WHERE buyer_id = $1 OR seller_id = $1
+      )
+    `, [id]);
 
-    // 2️⃣ حذف جميع المنتجات المقترحة من المورّد
-    await client.query('DELETE FROM product_images WHERE product_id IN (SELECT id FROM products WHERE supplier_id = (SELECT id FROM suppliers WHERE user_id = $1))', [id]);
-    await client.query('DELETE FROM product_vehicle_pricing WHERE supplier_id = (SELECT id FROM suppliers WHERE user_id = $1)', [id]);
-    await client.query('DELETE FROM products WHERE supplier_id = (SELECT id FROM suppliers WHERE user_id = $1)', [id]);
+    await client.query(`
+      DELETE FROM orders 
+      WHERE buyer_id = $1 OR seller_id = $1
+    `, [id]);
 
-    // 3️⃣ حذف بيانات المورّد إن وجدت
-    await client.query('DELETE FROM suppliers WHERE user_id = $1', [id]);
-
-    // 4️⃣ حذف جميع جلسات المستخدم
+    // 2️⃣ حذف جميع جلسات المستخدم
     await client.query('DELETE FROM user_sessions WHERE user_id = $1', [id]);
     await client.query('DELETE FROM admin_sessions WHERE admin_id = $1', [id]);
 
-    // 5️⃣ حذف ملف المستخدم الشخصي
+    // 3️⃣ حذف ملف المستخدم الشخصي
     await client.query('DELETE FROM profiles WHERE id = $1', [id]);
 
-    // 6️⃣ تسجيل العملية
+    // 4️⃣ تسجيل العملية
     await client.query(
       `INSERT INTO admin_activity_log (admin_id, action, note) 
        VALUES ($1, $2, $3)`,
