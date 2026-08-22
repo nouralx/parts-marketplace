@@ -1227,6 +1227,69 @@ app.post('/api/admin/toggle-user-status', checkAdminAuth, requirePermission('can
   }
 });
 
+// ============ حذف مستخدم من كامل المنصة ============
+app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage_users'), async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ success: false, error: 'معرّف المستخدم مطلوب' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // جلب معلومات المستخدم للتحقق
+    const userResult = await client.query('SELECT * FROM profiles WHERE id = $1', [id]);
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'المستخدم غير موجود' });
+    }
+
+    const userName = userResult.rows[0].full_name;
+    const authId = userResult.rows[0].id;
+
+    // 1️⃣ حذف جميع الطلبات والعناصر المتعلقة بالمستخدم
+    const ordersResult = await client.query('SELECT id FROM orders WHERE user_id = $1', [id]);
+    for (const order of ordersResult.rows) {
+      await client.query('DELETE FROM order_items WHERE order_id = $1', [order.id]);
+      await client.query('DELETE FROM orders WHERE id = $1', [order.id]);
+    }
+
+    // 2️⃣ حذف جميع المنتجات المقترحة من المورّد
+    await client.query('DELETE FROM product_images WHERE product_id IN (SELECT id FROM products WHERE supplier_id = (SELECT id FROM suppliers WHERE user_id = $1))', [id]);
+    await client.query('DELETE FROM product_vehicle_pricing WHERE supplier_id = (SELECT id FROM suppliers WHERE user_id = $1)', [id]);
+    await client.query('DELETE FROM products WHERE supplier_id = (SELECT id FROM suppliers WHERE user_id = $1)', [id]);
+
+    // 3️⃣ حذف بيانات المورّد إن وجدت
+    await client.query('DELETE FROM suppliers WHERE user_id = $1', [id]);
+
+    // 4️⃣ حذف جميع جلسات المستخدم
+    await client.query('DELETE FROM user_sessions WHERE user_id = $1', [id]);
+    await client.query('DELETE FROM admin_sessions WHERE admin_id = $1', [id]);
+
+    // 5️⃣ حذف ملف المستخدم الشخصي
+    await client.query('DELETE FROM profiles WHERE id = $1', [id]);
+
+    // 6️⃣ تسجيل العملية
+    await client.query(
+      `INSERT INTO admin_activity_log (admin_id, action, note) 
+       VALUES ($1, $2, $3)`,
+      [req.admin.admin_id, 'delete_user', `تم حذف المستخدم "${userName}" وجميع بياناته`]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({ success: true, message: 'تم حذف المستخدم وجميع بياناته بنجاح' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('خطأ في حذف المستخدم:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // ============ لوحة تحكم: منتجات وأسعار بانتظار الموافقة ============
 
 app.get('/api/admin/pending-products', checkAdminAuth, requirePermission('can_manage_products'), async (req, res) => {

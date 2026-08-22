@@ -137,6 +137,13 @@
     background: #16a34a;
     color: #fff;
   }
+  .btn-delete {
+    background: #dc2626;
+    color: #fff;
+  }
+  .btn-delete:hover {
+    background: #b91c1c;
+  }
   .empty-state {
     text-align: center;
     color: #9ca3af;
@@ -1653,6 +1660,9 @@
                   onclick="toggleUserStatus('${u.id}', ${!u.is_active})">
             ${u.is_active ? '⛔ تعطيل الحساب' : '✓ تفعيل الحساب'}
           </button>
+          <button class="btn btn-delete" onclick="deleteUser('${u.id}', '${escapeHtml(u.full_name)}')">
+            🗑️ حذف المستخدم
+          </button>
         </div>
       `;
       listEl.appendChild(card);
@@ -1674,6 +1684,34 @@
       loadUsers();
     } else {
       showToast(data?.error || 'فشل تنفيذ الإجراء');
+    }
+  }
+
+  async function deleteUser(userId, userName) {
+    const confirmed = confirm(`هل أنت متأكد من حذف المستخدم "${userName}" وجميع بياناته من المنصة؟\n\nهذه العملية لا يمكن التراجع عنها!`);
+    
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-admin-token': localStorage.getItem('admin_token'),
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('✅ تم حذف المستخدم وجميع بياناته بنجاح');
+        loadUsers();
+      } else {
+        showToast('❌ ' + (data.error || 'فشل حذف المستخدم'));
+      }
+    } catch (err) {
+      console.error('خطأ في حذف المستخدم:', err);
+      showToast('❌ حدث خطأ في الحذف');
     }
   }
 
