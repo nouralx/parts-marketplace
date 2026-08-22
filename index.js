@@ -1248,7 +1248,12 @@ app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage
 
     const userName = userResult.rows[0].full_name;
 
-    // 1️⃣ حذف جميع الطلبات والعناصر المتعلقة بالمستخدم
+    // الترتيب مهم! اتبع الـ foreign keys
+    
+    // 1️⃣ حذف الجلسات أولاً (لها FK على profiles)
+    await client.query('DELETE FROM user_sessions WHERE profile_id = $1', [id]);
+
+    // 2️⃣ حذف جميع الطلبات والعناصر
     const ordersResult = await client.query(
       'SELECT id FROM orders WHERE buyer_id = $1',
       [id]
@@ -1260,10 +1265,10 @@ app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage
     
     await client.query('DELETE FROM orders WHERE buyer_id = $1', [id]);
 
-    // 2️⃣ حذف ملف المستخدم الشخصي
+    // 3️⃣ حذف ملف المستخدم الشخصي (في الآخر بعد حذف كل الـ FKs)
     await client.query('DELETE FROM profiles WHERE id = $1', [id]);
 
-    // 3️⃣ تسجيل العملية
+    // 4️⃣ تسجيل العملية
     await client.query(
       `INSERT INTO admin_activity_log (admin_id, action, note) 
        VALUES ($1, $2, $3)`,
