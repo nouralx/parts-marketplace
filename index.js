@@ -1228,6 +1228,13 @@ app.post('/api/admin/toggle-user-status', checkAdminAuth, requirePermission('can
 });
 
 // ============ جلب تفاصيل مستخدم واحد ============
+    console.error('خطأ في جلب تفاصيل المستخدم:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============ حذف مستخدم من كامل المنصة ============
+// ============ جلب تفاصيل مستخدم واحد ============
 app.get('/api/admin/user-detail/:id', checkAdminAuth, requirePermission('can_manage_users'), async (req, res) => {
   const { id } = req.params;
 
@@ -1249,70 +1256,47 @@ app.get('/api/admin/user-detail/:id', checkAdminAuth, requirePermission('can_man
     // إذا كان موردًا، جلب بيانات المورد
     let supplierData = null;
     if (user.role === 'supplier') {
-      const supplierResult = await pool.query(
-        `SELECT store_name, wilaya, is_verified, national_id, registration_number, created_at 
-         FROM suppliers 
-         WHERE user_id = $1`,
-        [id]
-      );
-      if (supplierResult.rows.length > 0) {
-        supplierData = supplierResult.rows[0];
+      try {
+        const supplierResult = await pool.query(
+          `SELECT store_name, wilaya, is_verified, national_id 
+           FROM suppliers 
+           WHERE user_id = $1`,
+          [id]
+        );
+        if (supplierResult.rows.length > 0) {
+          supplierData = supplierResult.rows[0];
+        }
+      } catch (err) {
+        console.log('تحذير:', err.message);
       }
     }
 
-    // جلب الصور من Supabase إذا كانت موجودة
-    let recordImage = null;
-    let paymentImage = null;
-
-    // محاولة جلب صورة السجل
-    try {
-      const { data: files } = await supabase.storage
-        .from('user-documents')
-        .list(`${id}/`);
-      
-      if (files && files.length > 0) {
-        const recordFile = files.find(f => f.name.includes('record') || f.name.includes('ojada'));
-        const paymentFile = files.find(f => f.name.includes('payment') || f.name.includes('dafaa'));
-
-        if (recordFile) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('user-documents')
-            .getPublicUrl(`${id}/${recordFile.name}`);
-          recordImage = publicUrl;
-        }
-
-        if (paymentFile) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('user-documents')
-            .getPublicUrl(`${id}/${paymentFile.name}`);
-          paymentImage = publicUrl;
-        }
-      }
-    } catch (err) {
-      console.log('تحذير: لم يتم جلب الصور -', err.message);
-    }
-
-    const response = {
+    res.json({
       success: true,
       user: {
-        ...user,
+        id: user.id,
+        full_name: user.full_name || '-',
+        username: user.username || '-',
+        email: user.email || '-',
+        phone: user.phone || '-',
+        role: user.role || '-',
+        is_active: user.is_active || false,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
         store_name: supplierData?.store_name || null,
         wilaya: supplierData?.wilaya || null,
-        is_verified: supplierData?.is_verified || null,
+        is_verified: supplierData?.is_verified || false,
         national_id: supplierData?.national_id || null,
-        record_image: recordImage,
-        payment_image: paymentImage
+        record_image: null,
+        payment_image: null
       }
-    };
-
-    res.json(response);
+    });
   } catch (err) {
-    console.error('خطأ في جلب تفاصيل المستخدم:', err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error('خطأ:', err);
+    res.status(500).json({ success: false, error: 'فشل تحميل البيانات' });
   }
 });
 
-// ============ حذف مستخدم من كامل المنصة ============
 app.delete('/api/admin/users/:id', checkAdminAuth, requirePermission('can_manage_users'), async (req, res) => {
   const { id } = req.params;
 
