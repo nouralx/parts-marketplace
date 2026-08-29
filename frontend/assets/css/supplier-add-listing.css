@@ -1,0 +1,281 @@
+  :root{
+    --bg:#17181a; --panel:#1f2023; --panel-raised:#26282c;
+    --amber:#e3963e; --amber-dim:#8a5c26; --steel:#5c7c99;
+    --green:#5f9e6f; --red:#c0605a;
+    --text:#f2efe9; --text-muted:#93938d;
+    --line:#34353a; --line-bright:#46484e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+    padding-bottom:40px;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:plaintext;}
+  a{color:inherit; text-decoration:none;}
+  button, input, select, textarea{font-family:inherit;}
+
+  header{
+    padding:18px 18px 14px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:50;
+    background:rgba(23,24,26,0.94);
+    backdrop-filter:blur(8px);
+  }
+  header h1{font-family:'Changa', sans-serif; font-size:19px; font-weight:700;}
+  header p{font-size:12.5px; color:var(--text-muted); margin-top:3px;}
+
+  .tabs{display:flex; gap:6px; padding:14px 18px 0;}
+  .tab{
+    flex:1; text-align:center;
+    padding:10px 8px;
+    font-size:12.5px; font-weight:600;
+    border:1px solid var(--line-bright);
+    border-radius:6px;
+    color:var(--text-muted);
+    cursor:pointer;
+  }
+  .tab.active{border-color:var(--amber); color:var(--amber); background:rgba(227,150,62,0.08);}
+
+  .panel{display:none; padding:18px;}
+  .panel.active{display:block;}
+
+  /* بحث */
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel); border:1px solid var(--line-bright);
+    border-radius:6px; padding:10px 14px;
+  }
+  .search-box input{
+    flex:1; background:transparent; border:none; outline:none;
+    color:var(--text); font-size:14px;
+  }
+  .search-box svg{stroke:var(--text-muted); flex-shrink:0;}
+
+  .result-list{
+    margin-top:14px;
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:12px;
+  }
+  @media(min-width:520px){ .result-list{grid-template-columns:repeat(3,1fr);} }
+
+  .result-card{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; overflow:hidden;
+  }
+  .result-img{
+    aspect-ratio:1/1;
+    background:var(--panel-raised);
+    position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--line-bright);
+  }
+  .result-img img{width:100%; height:100%; object-fit:cover; display:block;}
+  .result-img .punch{
+    position:absolute; top:8px; left:8px;
+    width:13px; height:13px; border-radius:50%;
+    background:var(--bg); border:1px solid var(--line-bright);
+    z-index:2;
+  }
+  .mini-btn{
+    position:absolute; bottom:7px; right:7px; left:7px;
+    font-size:11.5px; font-weight:700;
+    background:rgba(227,150,62,0.94);
+    color:#1a1408;
+    border:none; border-radius:20px;
+    padding:7px 8px; z-index:2;
+    backdrop-filter:blur(3px);
+  }
+  .result-body{
+    padding:9px 10px 11px;
+    border-top:1px dashed var(--line);
+  }
+  .result-name{
+    font-size:12.5px; font-weight:600; margin-bottom:4px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    min-height:33px; line-height:1.35;
+  }
+  .result-oem{font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--text-muted);}
+  .result-oem::before{content:'OEM · '; color:var(--line-bright);}
+
+  /* صفوف بسيطة (تُستعمل لقائمة اختيار المركبة) */
+  .row-list{display:flex; flex-direction:column; gap:8px;}
+  .row-item{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:7px; padding:10px 12px; cursor:pointer;
+  }
+  .row-item:hover{border-color:var(--amber-dim);}
+  .row-name{font-size:13px; font-weight:600;}
+  .row-sub{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--text-muted); margin-top:2px;}
+
+  .propose-cta{
+    margin-top:18px; text-align:center;
+    padding:18px; border:1px dashed var(--line-bright);
+    border-radius:8px;
+  }
+  .propose-cta p{font-size:12.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.7;}
+  .btn-outline{
+    display:inline-block; font-size:13px; font-weight:600;
+    border:1px solid var(--amber); color:var(--amber);
+    padding:9px 20px; border-radius:6px; background:transparent; cursor:pointer;
+  }
+
+  /* نماذج */
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px;}
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    width:100%; background:var(--panel); border:1px solid var(--line-bright);
+    border-radius:6px; padding:11px 12px; color:var(--text); font-size:14px; outline:none;
+  }
+  .field textarea{resize:vertical; min-height:70px;}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--amber);}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  .file-drop{
+    border:1.5px dashed var(--line-bright); border-radius:8px;
+    padding:22px; text-align:center; cursor:pointer;
+    color:var(--text-muted); font-size:12.5px;
+  }
+  .file-drop.has-files{border-color:var(--amber); color:var(--amber);}
+  .file-preview{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .file-preview img{width:56px; height:56px; object-fit:cover; border-radius:5px; border:1px solid var(--line);}
+
+  .submit-btn{
+    width:100%; background:var(--amber); color:#1a1408;
+    border:none; border-radius:6px; padding:14px;
+    font-weight:700; font-size:15px; margin-top:6px;
+  }
+  .submit-btn:disabled{background:var(--line-bright); color:var(--text-muted);}
+
+  .form-msg{
+    margin-top:12px; padding:10px 14px; border-radius:6px; font-size:13px; display:none;
+  }
+  .form-msg.success{display:block; background:rgba(95,158,111,0.12); border:1px solid var(--green); color:var(--green);}
+  .form-msg.error{display:block; background:rgba(192,96,90,0.12); border:1px solid var(--red); color:var(--red);}
+
+  /* اقتراح منتج جديد - عرض/إخفاء */
+  #proposeForm, #listingForm{display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);}
+  #proposeForm.open, #listingForm.open{display:block;}
+
+  .selected-product{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel-raised); border:1px solid var(--amber-dim);
+    border-radius:6px; padding:10px 12px; margin-bottom:14px;
+  }
+  .selected-product img{width:40px; height:40px; border-radius:5px; object-fit:cover;}
+  .selected-product .n{font-size:13px; font-weight:600;}
+  .selected-product .change{margin-right:auto; font-size:11px; color:var(--amber); cursor:pointer;}
+
+  /* عروضي */
+  .listing-card{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:12px 14px; margin-bottom:10px;
+  }
+  .listing-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;}
+  .listing-name{font-size:13.5px; font-weight:600;}
+  .listing-veh{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
+  .status-pill{
+    font-size:10px; font-family:'IBM Plex Mono', monospace;
+    padding:3px 9px; border-radius:20px; white-space:nowrap;
+  }
+  .status-pill.pending{background:rgba(227,150,62,0.12); color:var(--amber); border:1px solid var(--amber-dim);}
+  .status-pill.approved{background:rgba(95,158,111,0.12); color:var(--green); border:1px solid var(--green);}
+  .status-pill.rejected{background:rgba(192,96,90,0.12); color:var(--red); border:1px solid var(--red);}
+  .rejection-note{
+    background:rgba(192,96,90,0.08); border:1px solid rgba(192,96,90,0.3);
+    border-radius:6px; padding:9px 12px; margin-top:9px;
+    font-size:12.5px; color:#e0a19d; line-height:1.7;
+  }
+  .rejection-note b{color:var(--red);}
+
+  .listing-bottom{display:flex; justify-content:space-between; align-items:center;}
+  .listing-price{font-family:'IBM Plex Mono', monospace; font-weight:600; color:var(--amber); font-size:14px;}
+
+  .switch{
+    position:relative; width:42px; height:24px; flex-shrink:0;
+  }
+  .switch input{opacity:0; width:0; height:0;}
+  .switch-track{
+    position:absolute; inset:0; background:var(--line-bright);
+    border-radius:20px; cursor:pointer; transition:.2s;
+  }
+  .switch-track::before{
+    content:''; position:absolute; width:18px; height:18px;
+    left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;
+  }
+  .switch input:checked + .switch-track{background:var(--green);}
+  .switch input:checked + .switch-track::before{transform:translateX(-18px);}
+
+  .empty{text-align:center; padding:40px 20px; color:var(--text-muted); font-size:13px;}
+  .loading{text-align:center; padding:30px; color:var(--text-muted); font-size:13px;}
+
+  /* زر "قدّمت عرضاً بالفعل" داخل بطاقة الكتالوج */
+  .mini-btn.already-offered{background:var(--panel-raised); color:var(--text-muted); border:1px solid var(--line-bright);}
+  .mini-btn.already-offered.approved{background:rgba(95,158,111,0.16); color:var(--green); border-color:var(--green);}
+  .mini-btn.already-offered.rejected{background:rgba(192,96,90,0.16); color:var(--red); border-color:var(--red);}
+  .mini-btn.already-offered.pending{background:rgba(227,150,62,0.16); color:var(--amber); border-color:var(--amber-dim);}
+  .result-img img{cursor:zoom-in;}
+
+  /* معاينة الصورة كاملة */
+  .lightbox-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.92);
+    z-index:200; display:none; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .lightbox-overlay.open{display:flex;}
+  .lightbox-overlay img{max-width:100%; max-height:90vh; border-radius:6px; object-fit:contain;}
+  .lightbox-close{
+    position:absolute; top:16px; left:16px;
+    width:38px; height:38px; border-radius:50%;
+    background:var(--panel); border:1px solid var(--line-bright);
+    color:var(--text); font-size:16px;
+  }
+
+  /* نافذة منبثقة عامة (تعديل السعر) */
+  .sheet-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:150;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .sheet-overlay.open{display:flex;}
+  .sheet-box{
+    background:var(--bg); width:100%; max-width:420px;
+    border:1px solid var(--line-bright); border-radius:12px;
+    padding:18px; margin:20px;
+  }
+  #priceEditOverlay.sheet-overlay{align-items:center; justify-content:center;}
+  .sheet-box-header{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .sheet-box-header h2{font-family:'Changa', sans-serif; font-size:16px; font-weight:700;}
+  .sheet-box-sub{font-size:12px; color:var(--text-muted); margin-top:3px;}
+  .sheet-close{
+    width:30px; height:30px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    border:1px solid var(--line-bright);
+    background:transparent;
+    color:var(--text-muted); font-size:15px;
+  }
+
+  /* عرض الصورة داخل بطاقة "عروضي" */
+  .listing-img{
+    width:44px; height:44px; border-radius:6px; flex-shrink:0;
+    background:var(--panel-raised); overflow:hidden; cursor:zoom-in;
+    display:flex; align-items:center; justify-content:center; color:var(--line-bright);
+  }
+  .listing-img img{width:100%; height:100%; object-fit:cover;}
+  .edit-price-btn{
+    font-size:11.5px; font-weight:600; color:var(--amber);
+    background:transparent; border:1px solid var(--amber-dim);
+    border-radius:20px; padding:5px 12px;
+  }
+  .delete-listing-btn, .delete-proposal-btn{
+    font-size:11.5px; font-weight:600; color:var(--red);
+    background:transparent; border:1px solid var(--red);
+    border-radius:20px; padding:5px 12px;
+  }

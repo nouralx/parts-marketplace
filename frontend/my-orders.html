@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>طلباتي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17181a; --panel:#1f2023; --panel-raised:#26282c;
+    --amber:#e3963e; --amber-dim:#8a5c26; --steel:#5c7c99;
+    --green:#5f9e6f; --red:#c0605a;
+    --text:#f2efe9; --text-muted:#93938d;
+    --line:#34353a; --line-bright:#46484e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+    padding-bottom:40px;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:plaintext;}
+  a{color:inherit; text-decoration:none;}
+
+  header{
+    padding:16px 18px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:50;
+    background:rgba(23,24,26,0.94);
+    backdrop-filter:blur(8px);
+    display:flex; align-items:center; gap:12px;
+  }
+  .back-btn{
+    width:34px; height:34px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line-bright);
+    border-radius:50%;
+  }
+  header h1{font-family:'Changa', sans-serif; font-size:17px; font-weight:700;}
+
+  main{padding:18px;}
+
+  .order-card{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:15px; margin-bottom:14px;
+  }
+  .order-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:10px; padding-bottom:10px;
+    border-bottom:1px dashed var(--line);
+  }
+  .order-id{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-muted);}
+  .order-date{font-size:11px; color:var(--text-muted); margin-top:2px;}
+  .order-total{
+    font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:17px; color:var(--amber);
+    text-align:left;
+  }
+
+  .status-pill{
+    display:inline-block;
+    font-size:10.5px; font-family:'IBM Plex Mono', monospace;
+    padding:3px 10px; border-radius:20px; margin-top:6px;
+  }
+  .status-pill.pending{background:rgba(227,150,62,0.12); color:var(--amber); border:1px solid var(--amber-dim);}
+  .status-pill.confirmed, .status-pill.preparing{background:rgba(92,124,153,0.15); color:var(--steel); border:1px solid var(--steel);}
+  .status-pill.shipped{background:rgba(227,150,62,0.12); color:var(--amber); border:1px solid var(--amber-dim);}
+  .status-pill.delivered{background:rgba(95,158,111,0.12); color:var(--green); border:1px solid var(--green);}
+  .status-pill.cancelled{background:rgba(192,96,90,0.12); color:var(--red); border:1px solid var(--red);}
+
+  .order-item-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 0; gap:10px;
+  }
+  .item-name{font-size:13px; font-weight:600;}
+  .item-meta{font-size:11px; color:var(--text-muted); margin-top:2px;}
+  .item-price{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--text-muted); white-space:nowrap;}
+
+  .order-ship{
+    margin-top:10px; padding-top:10px;
+    border-top:1px dashed var(--line);
+    font-size:11.5px; color:var(--text-muted); line-height:1.8;
+  }
+
+  .empty{
+    text-align:center; padding:70px 20px; color:var(--text-muted);
+  }
+  .empty svg{margin-bottom:14px; opacity:0.4;}
+  .empty h3{font-family:'Changa', sans-serif; font-size:18px; color:var(--text); margin-bottom:6px;}
+  .empty p{font-size:13px; line-height:1.7; margin-bottom:16px;}
+  .empty a{
+    display:inline-block; background:var(--amber); color:#1a1408;
+    font-weight:700; font-size:13.5px; padding:11px 26px; border-radius:6px;
+  }
+
+  .loading{text-align:center; padding:60px 20px; color:var(--text-muted); font-size:13px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/catalog.html" class="back-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+  <h1>طلباتي</h1>
+</header>
+
+<main id="content">
+  <div class="loading">جارِ التحميل…</div>
+</main>
+
+<script>
+const API_BASE = '';
+const userToken = localStorage.getItem('user_token');
+const userProfile = JSON.parse(localStorage.getItem('user_profile') || 'null');
+
+if(!userToken || !userProfile || userProfile.role !== 'buyer'){
+  window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+const orderStatusLabels = {
+  pending: 'قيد الانتظار', confirmed: 'مؤكَّد', preparing: 'قيد التجهيز',
+  shipped: 'تم الشحن', delivered: 'تم التسليم', cancelled: 'ملغي'
+};
+const itemStatusLabels = {
+  pending: 'بانتظار المورّد', confirmed: 'مؤكَّد', preparing: 'قيد التجهيز',
+  shipped: 'تم الشحن', delivered: 'تم التسليم', cancelled: 'ملغي'
+};
+
+async function loadOrders(){
+  const content = document.getElementById('content');
+  try{
+    const res = await fetch(`${API_BASE}/api/buyer/orders`, { headers: { 'x-user-token': userToken } });
+    const data = await res.json();
+
+    if(!data.success){
+      content.innerHTML = `<div class="empty"><h3>تعذّر التحميل</h3><p>${escapeHtml(data.error || '')}</p></div>`;
+      return;
+    }
+
+    if(!data.orders.length){
+      content.innerHTML = `<div class="empty">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <h3>ما عندكش أي طلب بعد</h3>
+        <p>تصفّح الكتالوج واطلب أول قطعة غيار تحتاجها</p>
+        <a href="/catalog.html">تصفّح الكتالوج</a>
+      </div>`;
+      return;
+    }
+
+    content.innerHTML = data.orders.map(order => {
+      const d = new Date(order.created_at);
+      const dateStr = d.toLocaleDateString('ar-DZ') + ' · ' + d.toLocaleTimeString('ar-DZ', { hour:'2-digit', minute:'2-digit' });
+
+      const itemsHtml = (order.items || []).map(item => `
+        <div class="order-item-row">
+          <div>
+            <div class="item-name">${escapeHtml(item.product_name)}</div>
+            <div class="item-meta">${escapeHtml(item.store_name)} · الكمية: ${item.quantity} · <span class="status-pill ${item.item_status}" style="margin-top:0;">${itemStatusLabels[item.item_status] || item.item_status}</span></div>
+          </div>
+          <div class="item-price">${parseFloat(item.unit_price).toLocaleString('ar-DZ')} دج</div>
+        </div>
+      `).join('');
+
+      return `<div class="order-card">
+        <div class="order-top">
+          <div>
+            <div class="order-id">طلب #${order.id}</div>
+            <div class="order-date">${dateStr}</div>
+            <span class="status-pill ${order.status}">${orderStatusLabels[order.status] || order.status}</span>
+          </div>
+          <div class="order-total">${parseFloat(order.total_amount).toLocaleString('ar-DZ')} دج</div>
+        </div>
+        ${itemsHtml}
+        <div class="order-ship">
+          📍 ${escapeHtml(order.shipping_address)}، ${escapeHtml(order.shipping_wilaya)}<br>
+          📞 ${escapeHtml(order.phone_contact)}
+          ${order.notes ? `<br>📝 ${escapeHtml(order.notes)}` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+  }catch(err){
+    content.innerHTML = `<div class="empty"><h3>لا يوجد اتصال</h3><p>تأكد من الشبكة وحاول مجدداً</p></div>`;
+  }
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>

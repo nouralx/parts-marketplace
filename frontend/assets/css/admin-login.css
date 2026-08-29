@@ -1,0 +1,81 @@
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #111827;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #1f2937;
+    width: 100%;
+    max-width: 400px;
+    margin: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+    padding: 34px 26px;
+  }
+  .logo {
+    text-align: center;
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 19px;
+    margin: 0 0 24px;
+    text-align: center;
+    color: #f9fafb;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: #9ca3af;
+  }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    font-size: 15px;
+    margin-bottom: 16px;
+    outline: none;
+    background: #111827;
+    color: #f9fafb;
+  }
+  input:focus {
+    border-color: #3b82f6;
+  }
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.primary:disabled {
+    background: #1e3a8a;
+    cursor: not-allowed;
+  }
+  button.primary:hover:not(:disabled) {
+    background: #2563eb;
+  }
+  .msg {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .msg.error {
+    background: #7f1d1d;
+    color: #fecaca;
+    display: block;
+  }

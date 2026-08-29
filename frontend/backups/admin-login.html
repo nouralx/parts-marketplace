@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دخول الإدارة</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #111827;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #1f2937;
+    width: 100%;
+    max-width: 400px;
+    margin: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+    padding: 34px 26px;
+  }
+  .logo {
+    text-align: center;
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 19px;
+    margin: 0 0 24px;
+    text-align: center;
+    color: #f9fafb;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: #9ca3af;
+  }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    font-size: 15px;
+    margin-bottom: 16px;
+    outline: none;
+    background: #111827;
+    color: #f9fafb;
+  }
+  input:focus {
+    border-color: #3b82f6;
+  }
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.primary:disabled {
+    background: #1e3a8a;
+    cursor: not-allowed;
+  }
+  button.primary:hover:not(:disabled) {
+    background: #2563eb;
+  }
+  .msg {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .msg.error {
+    background: #7f1d1d;
+    color: #fecaca;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">🔐</div>
+  <h1>دخول لوحة الإدارة</h1>
+
+  <label>اسم المستخدم</label>
+  <input type="text" id="usernameInput" autocapitalize="none" />
+
+  <label>كلمة المرور</label>
+  <input type="password" id="passwordInput" />
+
+  <button class="primary" id="loginBtn" onclick="login()">تسجيل الدخول</button>
+  <div id="msg" class="msg"></div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+
+  // إذا كانت هناك جلسة صالحة بالفعل، انتقل مباشرة للوحة
+  if (localStorage.getItem('admin_token')) {
+    window.location.href = 'admin-dashboard.html';
+  }
+
+  function showMsg(text) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg error';
+  }
+
+  async function login() {
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+
+    if (!username || !password) {
+      showMsg('الرجاء إدخال اسم المستخدم وكلمة المرور');
+      return;
+    }
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'جارٍ الدخول...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem('admin_token', data.token);
+        localStorage.setItem('admin_role', data.role);
+        localStorage.setItem('admin_name', data.full_name);
+        window.location.href = 'admin-dashboard.html';
+      } else {
+        showMsg(data.error || 'حدث خطأ');
+      }
+    } catch (err) {
+      showMsg('خطأ في الاتصال: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'تسجيل الدخول';
+    }
+  }
+
+  document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') login();
+  });
+</script>
+
+</body>
+</html>

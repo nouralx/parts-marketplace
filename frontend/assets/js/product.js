@@ -1,0 +1,351 @@
+const API_BASE = '';
+const params = new URLSearchParams(window.location.search);
+const productId = params.get('id');
+const userToken = localStorage.getItem('user_token'); // عدّل حسب طريقة تخزين التوكن في مشروعك
+
+let currentProduct = null;
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function placeholderIcon(size){
+  return `<div class="ph"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+  </svg></div>`;
+}
+
+const deliveryLabels = {
+  shipping: 'يوفّر الشحن',
+  pickup_only: 'استلام من المحل فقط',
+  both: 'شحن أو استلام'
+};
+
+const gradeLabels = {
+  grade_1: 'نوعية 1 - أصلية',
+  grade_2: 'نوعية 2',
+  economy: 'اقتصادية'
+};
+
+function initials(name){
+  return (name || '؟').trim().charAt(0);
+}
+
+async function loadProduct(){
+  if(!productId){
+    document.getElementById('content').innerHTML = `<div class="empty-offers">رابط غير صحيح</div>`;
+    return;
+  }
+  try{
+    const headers = {};
+    if(userToken) headers['x-user-token'] = userToken;
+
+    const res = await fetch(`${API_BASE}/api/catalog/${productId}`, { headers });
+    const data = await res.json();
+
+    if(!data.success){
+      document.getElementById('content').innerHTML = `<div class="empty-offers">تعذّر تحميل المنتج: ${escapeHtml(data.error||'')}</div>`;
+      return;
+    }
+
+    currentProduct = data.product;
+    render(currentProduct);
+  }catch(err){
+    document.getElementById('content').innerHTML = `<div class="empty-offers">لا يوجد اتصال بالخادم</div>`;
+  }
+}
+
+function render(p){
+  const images = p.images && p.images.length ? p.images : [];
+  const mainImg = images.length
+    ? `<img id="mainImg" src="${images[0]}" alt="${escapeHtml(p.name)}">`
+    : placeholderIcon(56);
+
+  const thumbs = images.length > 1
+    ? `<div class="thumbs">${images.map((url,i)=>`<div class="thumb ${i===0?'active':''}" data-src="${url}" data-i="${i}"><img src="${url}"></div>`).join('')}</div>`
+    : '';
+
+  let offersHtml;
+  if(p.login_required){
+    offersHtml = `
+      <div class="offers-section">
+        <div class="offers-count-line">
+          <div><span class="num">${p.offers_count || 0}</span> <span class="label">بائع متوفر لهذه القطعة</span></div>
+        </div>
+        <div class="login-gate">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <p>سجّل الدخول لرؤية أسعار البائعين، محلاتهم، وأرقام تواصلهم</p>
+          <a class="btn" href="/login.html?redirect=/product.html?id=${p.id}">تسجيل الدخول</a>
+        </div>
+      </div>`;
+  } else {
+    offersHtml = `
+      <div class="offers-section">
+        <div class="offers-count-line">
+          <div><span class="num">${(p.offers||[]).length}</span> <span class="label">بائع متوفر لهذه القطعة</span></div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="gallery">
+      <div class="main-img">${mainImg}</div>
+      ${thumbs}
+    </div>
+    <div class="info">
+      ${p.category ? `<span class="cat-tag">${escapeHtml(p.category)}</span>` : ''}
+      <h1>${escapeHtml(p.name)}</h1>
+      <div class="oem-row">رقم OEM: <b class="mono">${escapeHtml(p.oem_number || '—')}</b></div>
+      ${p.description ? `<div class="desc">${escapeHtml(p.description)}</div>` : ''}
+      <span class="condition-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        قطعة جديدة (غير مستعملة)
+      </span>
+    </div>
+    ${offersHtml}
+  `;
+
+  // شريط الصور المصغرة
+  document.querySelectorAll('.thumb').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.thumb').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('mainImg').src = t.dataset.src;
+    });
+  });
+
+  // الشريط السفلي
+  const bottomBar = document.getElementById('bottomBar');
+  const buyBtn = document.getElementById('buyBtn');
+  bottomBar.style.display = 'flex';
+
+  if(p.login_required){
+    buyBtn.textContent = 'سجّل الدخول لعرض البائعين';
+    buyBtn.onclick = () => window.location.href = `/login.html?redirect=/product.html?id=${p.id}`;
+  } else if(!p.offers || p.offers.length === 0){
+    buyBtn.textContent = 'لا يوجد بائعون متوفرون حالياً';
+    buyBtn.disabled = true;
+  } else {
+    buyBtn.textContent = 'عرض البائعين';
+    buyBtn.disabled = false;
+    buyBtn.onclick = openSellersSheet;
+  }
+}
+
+function openSellersSheet(){
+  const list = document.getElementById('sellerList');
+  const offers = currentProduct.offers || [];
+
+  if(offers.length === 0){
+    list.innerHTML = `<div class="empty-offers">لا يوجد بائعون متوفرون حالياً لهذه القطعة</div>`;
+  } else {
+    list.innerHTML = offers.map((o, idx) => {
+      const gradeClass = o.quality_grade === 'grade_1' ? 'g1' : '';
+      const gradeText = gradeLabels[o.quality_grade] || o.quality_grade || '';
+      const vehText = o.make ? `${o.make} ${o.model || ''} ${o.year_start||''}-${o.year_end||''}` : '';
+
+      return `<div class="seller-row" data-idx="${idx}">
+        <div class="seller-avatar">${initials(o.store_name)}</div>
+        <div class="seller-mid">
+          <div class="seller-name">
+            ${escapeHtml(o.store_name || 'متجر')}
+            ${o.is_verified ? `<svg class="verified-tick" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 9.5 4.5 6 4l-.5 3.5L2 9l2 3-2 3 3.5 1.5L6 20l3.5-.5L12 22l2.5-2.5L18 20l.5-3.5L22 15l-2-3 2-3-3.5-1.5L18 4l-3.5.5z"/></svg>` : ''}
+          </div>
+          <div class="seller-meta">
+            <span>${escapeHtml(o.wilaya || 'غير محدد')}</span>
+            ${gradeText ? `<span class="sep">·</span><span class="grade-pill ${gradeClass}">${escapeHtml(gradeText)}</span>` : ''}
+          </div>
+          ${vehText ? `<div class="seller-meta" style="margin-top:4px;">${escapeHtml(vehText)}</div>` : ''}
+        </div>
+        <div class="seller-price">
+          ${parseFloat(o.price).toLocaleString('ar-DZ')}
+          <small>دج</small>
+        </div>
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('.seller-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const idx = parseInt(row.dataset.idx);
+        openTraderDetail(offers[idx]);
+      });
+    });
+  }
+
+  document.getElementById('sellersTitle').textContent = `${offers.length} بائع متوفر`;
+  document.getElementById('sellersOverlay').classList.add('open');
+}
+
+function openTraderDetail(o){
+  document.getElementById('sellersOverlay').classList.remove('open');
+
+  const gradeText = gradeLabels[o.quality_grade] || o.quality_grade || 'غير محدد';
+  const deliveryText = deliveryLabels[o.delivery_type] || 'غير محدد';
+  const vehText = o.make ? `${o.make} ${o.model || ''} (${o.year_start||''}–${o.year_end||''})` : 'غير محدد';
+  const unitPrice = parseFloat(o.price);
+
+  const userToken = localStorage.getItem('user_token');
+  const userProfile = JSON.parse(localStorage.getItem('user_profile') || 'null');
+  const isBuyer = userToken && userProfile && userProfile.role === 'buyer';
+
+  document.getElementById('traderDetail').innerHTML = `
+    <div class="trader-head">
+      <div class="trader-avatar">${initials(o.store_name)}</div>
+      <div>
+        <h3>${escapeHtml(o.store_name || 'متجر')} ${o.is_verified ? '✓' : ''}</h3>
+        <div class="loc">📍 ${escapeHtml(o.wilaya || 'الولاية غير محددة')}</div>
+      </div>
+    </div>
+
+    <div class="price-box">
+      <div class="amount">${unitPrice.toLocaleString('ar-DZ')} دج</div>
+      <div class="veh">متوافقة مع: ${escapeHtml(vehText)}</div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="k">الجودة</div>
+        <div class="v">${escapeHtml(gradeText)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="k">التوصيل</div>
+        <div class="v">${escapeHtml(deliveryText)}</div>
+      </div>
+      ${o.brand ? `<div class="detail-item"><div class="k">الماركة</div><div class="v">${escapeHtml(o.brand)}</div></div>` : ''}
+      ${o.country_of_origin ? `<div class="detail-item"><div class="k">بلد المنشأ</div><div class="v">${escapeHtml(o.country_of_origin)}</div></div>` : ''}
+      <div class="detail-item full">
+        <div class="k">رقم الهاتف</div>
+        <div class="v mono">${escapeHtml(o.phone || 'غير متوفر')}</div>
+      </div>
+    </div>
+
+    ${o.phone ? `<a class="call-btn" href="tel:${o.phone}">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      اتصل بالبائع
+    </a>` : ''}
+
+    ${isBuyer ? `
+      <button class="order-toggle-btn" id="toggleOrderFormBtn">🛒 اطلب الآن</button>
+      <div class="order-form" id="orderForm">
+        <div class="qty-row">
+          <span class="lbl">الكمية</span>
+          <div class="qty-stepper">
+            <button type="button" id="qtyMinus">−</button>
+            <span id="qtyValue">1</span>
+            <button type="button" id="qtyPlus">+</button>
+          </div>
+        </div>
+        <div class="order-field">
+          <label>عنوان الشحن *</label>
+          <textarea id="orderAddress" placeholder="الحي، الشارع، رقم المنزل..."></textarea>
+        </div>
+        <div class="order-field">
+          <label>الولاية *</label>
+          <input type="text" id="orderWilaya" placeholder="مثال: الجزائر العاصمة">
+        </div>
+        <div class="order-field">
+          <label>رقم الهاتف للتواصل *</label>
+          <input type="text" id="orderPhone" placeholder="0555 xx xx xx" value="${escapeHtml(userProfile.phone || '')}">
+        </div>
+        <div class="order-field">
+          <label>ملاحظات (اختياري)</label>
+          <textarea id="orderNotes" placeholder="أي تفاصيل إضافية للبائع..."></textarea>
+        </div>
+        <div class="order-total-row">
+          <span>الإجمالي</span>
+          <span class="val" id="orderTotal">${unitPrice.toLocaleString('ar-DZ')} دج</span>
+        </div>
+        <button class="confirm-order-btn" id="confirmOrderBtn">تأكيد الطلب</button>
+        <div class="order-msg" id="orderMsg"></div>
+      </div>
+    ` : (userToken ? '' : `<a class="order-toggle-btn" href="/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">🛒 سجّل الدخول للطلب</a>`)}
+  `;
+
+  document.getElementById('traderOverlay').classList.add('open');
+
+  if(isBuyer){
+    let qty = 1;
+    const qtyValueEl = document.getElementById('qtyValue');
+    const orderTotalEl = document.getElementById('orderTotal');
+
+    function refreshTotal(){
+      qtyValueEl.textContent = qty;
+      orderTotalEl.textContent = (unitPrice * qty).toLocaleString('ar-DZ') + ' دج';
+    }
+
+    document.getElementById('toggleOrderFormBtn').addEventListener('click', () => {
+      document.getElementById('orderForm').classList.toggle('open');
+    });
+    document.getElementById('qtyMinus').addEventListener('click', () => {
+      if(qty > 1){ qty--; refreshTotal(); }
+    });
+    document.getElementById('qtyPlus').addEventListener('click', () => {
+      qty++; refreshTotal();
+    });
+
+    document.getElementById('confirmOrderBtn').addEventListener('click', async () => {
+      const address = document.getElementById('orderAddress').value.trim();
+      const wilaya = document.getElementById('orderWilaya').value.trim();
+      const phone = document.getElementById('orderPhone').value.trim();
+      const notes = document.getElementById('orderNotes').value.trim();
+      const msgEl = document.getElementById('orderMsg');
+      msgEl.className = 'order-msg';
+
+      if(!address || !wilaya || !phone){
+        msgEl.className = 'order-msg error';
+        msgEl.textContent = 'عنوان الشحن والولاية ورقم الهاتف مطلوبة';
+        return;
+      }
+
+      const btn = document.getElementById('confirmOrderBtn');
+      btn.disabled = true; btn.textContent = 'جارِ إرسال الطلب…';
+
+      try{
+        const res = await fetch(`${API_BASE}/api/orders`, {
+          method: 'POST',
+          headers: { 'x-user-token': userToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: [{ product_id: currentProduct.id, pricing_id: o.id, quantity: qty }],
+            shipping_address: address,
+            shipping_wilaya: wilaya,
+            phone_contact: phone,
+            notes: notes || undefined
+          })
+        });
+        const data = await res.json();
+
+        if(data.success){
+          msgEl.className = 'order-msg success';
+          msgEl.textContent = `تم إرسال طلبك بنجاح! رقم الطلب: ${data.order_id}`;
+          btn.textContent = 'تم الإرسال ✓';
+          setTimeout(() => { window.location.href = '/my-orders.html'; }, 1400);
+        } else {
+          msgEl.className = 'order-msg error';
+          msgEl.textContent = data.error || 'فشل إرسال الطلب';
+          btn.disabled = false; btn.textContent = 'تأكيد الطلب';
+        }
+      }catch(err){
+        msgEl.className = 'order-msg error';
+        msgEl.textContent = 'تعذّر الاتصال بالخادم';
+        btn.disabled = false; btn.textContent = 'تأكيد الطلب';
+      }
+    });
+  }
+}
+
+document.getElementById('closeSellers').addEventListener('click', () => {
+  document.getElementById('sellersOverlay').classList.remove('open');
+});
+document.getElementById('closeTrader').addEventListener('click', () => {
+  document.getElementById('traderOverlay').classList.remove('open');
+});
+document.getElementById('sellersOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'sellersOverlay') e.target.classList.remove('open');
+});
+document.getElementById('traderOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'traderOverlay') e.target.classList.remove('open');
+});
+
+loadProduct();

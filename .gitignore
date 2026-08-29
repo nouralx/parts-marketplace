@@ -1,0 +1,81 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+vendor/
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Uploads and temp files
+uploads/
+temp/
+tmp/
+*.tmp
+.cache/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Docker
+.docker-compose.override.yml
+.dockerignore
+
+# Backup
+*.backup
+*.bak
+*.tmp
+
+# IDE specific
+*.iml
+.gradle
+local.properties
+
+# Testing
+coverage/
+.nyc_output/
+cypress/screenshots/
+cypress/videos/
+
+# Environment specific
+.env.development.local
+.env.test.local
+.env.production.local

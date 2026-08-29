@@ -1,0 +1,93 @@
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: linear-gradient(135deg, #eff6ff 0%, #f3f4f6 100%);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #fff;
+    width: 100%;
+    max-width: 420px;
+    margin: 20px;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    padding: 36px 28px;
+  }
+  .lang-switch {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .lang-switch button {
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+  }
+  .lang-switch button.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+  }
+  .logo {
+    text-align: center;
+    font-size: 44px;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 6px;
+    text-align: center;
+    color: #1f2937;
+  }
+  p.subtitle {
+    text-align: center;
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0 0 32px;
+  }
+  a.action-btn {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    transition: transform 0.1s;
+  }
+  a.action-btn:active {
+    transform: scale(0.98);
+  }
+  .btn-primary {
+    background: #2563eb;
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: #1d4ed8;
+  }
+  .btn-secondary {
+    background: #fff;
+    color: #2563eb;
+    border: 2px solid #2563eb;
+  }
+  .btn-secondary:hover {
+    background: #eff6ff;
+  }
+  .divider {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    margin: 18px 0;
+  }

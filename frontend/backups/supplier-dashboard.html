@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم المورد</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header > div h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .header > div p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .header .logout-btn {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: fit-content;
+    }
+
+    .header .logout-btn:hover {
+      background: #dc2626;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .header .logout-btn:active {
+      transform: scale(0.98);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      background: #f3f4f6;
+      color: #6b7280;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab-button.active {
+      background: #fff;
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+
+    .tab-button:hover {
+      background: #f9fafb;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-card h3 {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .stat-card .number {
+      font-size: 28px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 13px;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .value {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #6b7280;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      border-left: 4px solid #991b1b;
+    }
+
+    .success {
+      background: #dcfce7;
+      color: #166534;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      border-left: 4px solid #166534;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .action-buttons .btn {
+      flex: 1;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        flex: 1 1 50%;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- الرأس -->
+    <div class="header">
+      <div>
+        <h1>🏪 لوحة تحكم المورد</h1>
+        <p id="storeName">جاري التحميل...</p>
+      </div>
+      <button class="logout-btn" onclick="logout()">🚪 تسجيل خروج</button>
+    </div>
+
+    <!-- التابات -->
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('overview')">📊 نظرة عامة</button>
+      <button class="tab-button" onclick="switchTab('listings')">📦 الإدراجات</button>
+      <button class="tab-button" onclick="switchTab('orders')">📋 الطلبات</button>
+      <button class="tab-button" onclick="switchTab('proposed')">⏳ المقترحات</button>
+      <button class="tab-button" onclick="switchTab('settings')">⚙️ الإعدادات</button>
+    </div>
+
+    <!-- نظرة عامة -->
+    <div id="overview" class="tab-content active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>الإدراجات النشطة</h3>
+          <div class="number" id="activeListings">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>الطلبات المستلمة</h3>
+          <div class="number" id="ordersCount">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>المنتجات المقترحة</h3>
+          <div class="number" id="proposedCount">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>إجمالي المبيعات</h3>
+          <div class="number" id="totalSales">0 DA</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📌 معلومات المتجر</div>
+        <div class="info-row">
+          <span class="label">اسم المتجر:</span>
+          <span class="value" id="infoStoreName">-</span>
+        </div>
+        <div class="info-row">
+          <span class="label">الولاية:</span>
+          <span class="value" id="infoWilaya">-</span>
+        </div>
+        <div class="info-row">
+          <span class="label">البطاقة الوطنية:</span>
+          <span class="value" id="infoNationalId">-</span>
+        </div>
+        <div class="info-row">
+          <span class="label">حالة التحقق:</span>
+          <span class="value" id="infoVerified">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- الإدراجات -->
+    <div id="listings" class="tab-content">
+      <button class="btn btn-primary" onclick="window.location.href='/supplier-add-listing.html'">➕ إدراج جديد</button>
+      <div id="listingsContainer" class="message">
+        جاري تحميل الإدراجات...
+      </div>
+    </div>
+
+    <!-- الطلبات -->
+    <div id="orders" class="tab-content">
+      <div id="ordersContainer" class="message">
+        جاري تحميل الطلبات...
+      </div>
+    </div>
+
+    <!-- المقترحات -->
+    <div id="proposed" class="tab-content">
+      <div id="proposedContainer" class="message">
+        جاري تحميل المقترحات...
+      </div>
+    </div>
+
+    <!-- الإعدادات -->
+    <div id="settings" class="tab-content">
+      <div class="card">
+        <div class="card-title">⚙️ إعدادات المتجر</div>
+        <button class="btn btn-secondary">تعديل معلومات المتجر</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🔐 الأمان</div>
+        <button class="btn btn-secondary">تغيير كلمة المرور</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🚪 تسجيل الخروج</div>
+        <button class="btn btn-secondary" onclick="logout()">تسجيل الخروج</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://parts-marketplace.onrender.com';
+
+    // تبديل التابات
+    function switchTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(name).classList.add('active');
+      event.target.classList.add('active');
+
+      if (name === 'listings') loadListings();
+      if (name === 'orders') loadOrders();
+      if (name === 'proposed') loadProposed();
+    }
+
+    // تحميل البيانات الأساسية
+    async function loadSupplierData() {
+      try {
+        const token = localStorage.getItem('user_token');
+        if (!token) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const res = await fetch(`${API_BASE}/api/supplier/profile`, {
+          headers: { 'x-user-token': token }
+        });
+
+        if (!res.ok) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          updateSupplierInfo(data.supplier);
+        }
+      } catch (err) {
+        console.error('خطأ:', err);
+      }
+    }
+
+    function updateSupplierInfo(supplier) {
+      document.getElementById('storeName').textContent = `متجر: ${supplier.store_name || '-'}`;
+      document.getElementById('infoStoreName').textContent = supplier.store_name || '-';
+      document.getElementById('infoWilaya').textContent = supplier.wilaya || '-';
+      document.getElementById('infoNationalId').textContent = supplier.national_id || '-';
+      document.getElementById('infoVerified').textContent = supplier.is_verified ? '✅ موثق' : '⏳ في انتظار التحقق';
+    }
+
+    // تحميل الإدراجات
+    async function loadListings() {
+      try {
+        const token = localStorage.getItem('user_token');
+        const res = await fetch(`${API_BASE}/api/supplier/listings`, {
+          headers: { 'x-user-token': token }
+        });
+
+        const data = await res.json();
+        if (data.success && data.listings.length > 0) {
+          document.getElementById('listingsContainer').innerHTML = data.listings.map(l => `
+            <div class="card">
+              <div class="card-title">${l.product_name}</div>
+              <div class="info-row">
+                <span class="label">السعر:</span>
+                <span class="value">${l.price} DA</span>
+              </div>
+              <div class="info-row">
+                <span class="label">الحالة:</span>
+                <span class="value">${l.is_available ? '✅ متاح' : '❌ غير متاح'}</span>
+              </div>
+              <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="alert('تحرير الإدراج')">تعديل</button>
+                <button class="btn btn-secondary" onclick="alert('حذف الإدراج')">حذف</button>
+              </div>
+            </div>
+          `).join('');
+          document.getElementById('activeListings').textContent = data.listings.length;
+        } else {
+          document.getElementById('listingsContainer').innerHTML = '<div class="message">لا توجد إدراجات حالياً</div>';
+        }
+      } catch (err) {
+        console.error('خطأ:', err);
+      }
+    }
+
+    // تحميل الطلبات
+    async function loadOrders() {
+      try {
+        const token = localStorage.getItem('user_token');
+        const res = await fetch(`${API_BASE}/api/supplier/orders`, {
+          headers: { 'x-user-token': token }
+        });
+
+        const data = await res.json();
+        if (data.success && data.orders.length > 0) {
+          document.getElementById('ordersContainer').innerHTML = data.orders.map(o => `
+            <div class="card">
+              <div class="card-title">طلب #${o.id.substring(0, 8)}</div>
+              <div class="info-row">
+                <span class="label">المنتج:</span>
+                <span class="value">${o.product_name}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">الحالة:</span>
+                <span class="value"><span class="badge badge-pending">${o.status}</span></span>
+              </div>
+              <div class="action-buttons">
+                <button class="btn btn-primary">قبول</button>
+                <button class="btn btn-secondary">رفض</button>
+              </div>
+            </div>
+          `).join('');
+          document.getElementById('ordersCount').textContent = data.orders.length;
+        } else {
+          document.getElementById('ordersContainer').innerHTML = '<div class="message">لا توجد طلبات حالياً</div>';
+        }
+      } catch (err) {
+        console.error('خطأ:', err);
+      }
+    }
+
+    // تحميل المقترحات
+    async function loadProposed() {
+      try {
+        const token = localStorage.getItem('user_token');
+        const res = await fetch(`${API_BASE}/api/supplier/proposed-products`, {
+          headers: { 'x-user-token': token }
+        });
+
+        const data = await res.json();
+        if (data.success && data.products.length > 0) {
+          document.getElementById('proposedContainer').innerHTML = data.products.map(p => `
+            <div class="card">
+              <div class="card-title">${p.name}</div>
+              <div class="info-row">
+                <span class="label">الحالة:</span>
+                <span class="badge ${p.approval_status === 'pending' ? 'badge-pending' : p.approval_status === 'approved' ? 'badge-approved' : 'badge-rejected'}">
+                  ${p.approval_status === 'pending' ? '⏳ في الانتظار' : p.approval_status === 'approved' ? '✅ موافق عليه' : '❌ مرفوض'}
+                </span>
+              </div>
+              ${p.rejection_reason ? `<div class="info-row"><span class="label">سبب الرفض:</span><span class="value">${p.rejection_reason}</span></div>` : ''}
+            </div>
+          `).join('');
+          document.getElementById('proposedCount').textContent = data.products.length;
+        } else {
+          document.getElementById('proposedContainer').innerHTML = '<div class="message">لا توجد مقترحات حالياً</div>';
+        }
+      } catch (err) {
+        console.error('خطأ:', err);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('user_role');
+      window.location.href = '/login.html';
+    }
+
+    // تحميل البيانات عند فتح الصفحة
+    loadSupplierData();
+  </script>
+</body>
+</html>

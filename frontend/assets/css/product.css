@@ -1,0 +1,405 @@
+  :root{
+    --bg:#17181a;
+    --panel:#1f2023;
+    --panel-raised:#26282c;
+    --amber:#e3963e;
+    --amber-dim:#8a5c26;
+    --steel:#5c7c99;
+    --green:#5f9e6f;
+    --red:#c0605a;
+    --text:#f2efe9;
+    --text-muted:#93938d;
+    --line:#34353a;
+    --line-bright:#46484e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:90px;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:plaintext;}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit; cursor:pointer;}
+
+  /* ===== شريط علوي ===== */
+  .topbar{
+    display:flex; align-items:center; gap:12px;
+    padding:16px 18px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0;
+    background:rgba(23,24,26,0.92);
+    backdrop-filter:blur(8px);
+    z-index:60;
+  }
+  .back-btn{
+    width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line-bright);
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .topbar .brand{font-family:'Changa', sans-serif; font-weight:700; font-size:15px; color:var(--text-muted);}
+
+  /* ===== معرض الصور ===== */
+  .gallery{padding:18px;}
+  .main-img{
+    aspect-ratio:1/1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .main-img img{width:100%; height:100%; object-fit:cover;}
+  .main-img .ph{color:var(--line-bright);}
+  .thumbs{
+    display:flex; gap:8px; margin-top:10px;
+    overflow-x:auto;
+    padding-bottom:4px;
+  }
+  .thumb{
+    width:60px; height:60px; flex-shrink:0;
+    border-radius:5px; overflow:hidden;
+    border:2px solid var(--line);
+    cursor:pointer;
+    background:var(--panel);
+    transition:border-color .15s;
+  }
+  .thumb.active{border-color:var(--amber);}
+  .thumb img{width:100%; height:100%; object-fit:cover;}
+
+  /* ===== معلومات المنتج ===== */
+  .info{padding:0 18px 18px;}
+  .cat-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--amber);
+    border:1px solid var(--amber-dim);
+    padding:3px 10px;
+    border-radius:20px;
+    margin-bottom:12px;
+  }
+  h1{
+    font-family:'Changa', sans-serif;
+    font-weight:700;
+    font-size:22px;
+    line-height:1.4;
+    margin-bottom:8px;
+  }
+  .oem-row{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:14px;
+  }
+  .oem-row b{color:var(--text);}
+  .desc{
+    font-size:14px;
+    color:var(--text-muted);
+    line-height:1.8;
+    margin-bottom:16px;
+  }
+  .condition-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(95,158,111,0.12);
+    border:1px solid var(--green);
+    color:var(--green);
+    font-size:12px;
+    padding:5px 12px;
+    border-radius:20px;
+  }
+
+  /* ===== قسم العروض / تسجيل الدخول ===== */
+  .offers-section{
+    margin:0 18px 18px;
+    padding:16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .offers-count-line{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .offers-count-line .num{
+    font-family:'Changa', sans-serif;
+    font-weight:800;
+    font-size:26px;
+    color:var(--amber);
+  }
+  .offers-count-line .label{font-size:12.5px; color:var(--text-muted);}
+
+  .login-gate{
+    text-align:center;
+    padding:14px 8px 4px;
+  }
+  .login-gate svg{margin-bottom:10px; opacity:0.5;}
+  .login-gate p{font-size:13px; color:var(--text-muted); margin-bottom:14px; line-height:1.7;}
+  .login-gate a.btn{
+    display:inline-block;
+    background:var(--amber);
+    color:#1a1408;
+    font-weight:700;
+    font-size:14px;
+    padding:11px 28px;
+    border-radius:5px;
+  }
+
+  /* ===== شريط سفلي ثابت ===== */
+  .bottom-bar{
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    padding:12px 18px;
+    display:flex; gap:10px;
+    z-index:60;
+  }
+  .buy-btn{
+    flex:1;
+    background:var(--amber);
+    color:#1a1408;
+    border:none;
+    border-radius:6px;
+    font-weight:700;
+    font-size:15px;
+    padding:14px;
+  }
+  .buy-btn:disabled{background:var(--line-bright); color:var(--text-muted);}
+
+  /* ===== الشيت السفلي (قائمة البائعين) ===== */
+  .sheet-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:100;
+    display:none;
+    align-items:flex-end;
+  }
+  .sheet-overlay.open{display:flex;}
+  .sheet{
+    background:var(--bg);
+    width:100%;
+    max-height:82vh;
+    border-radius:16px 16px 0 0;
+    border-top:1px solid var(--line-bright);
+    overflow-y:auto;
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{ from{transform:translateY(100%);} to{transform:translateY(0);} }
+  .sheet-handle{
+    width:36px; height:4px; background:var(--line-bright);
+    border-radius:3px; margin:10px auto 4px;
+  }
+  .sheet-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 18px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .sheet-header h2{font-family:'Changa', sans-serif; font-size:17px; font-weight:700;}
+  .sheet-close{
+    width:30px; height:30px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    border:1px solid var(--line-bright);
+    color:var(--text-muted);
+  }
+
+  .seller-list{padding:8px 12px 20px;}
+  .seller-row{
+    display:flex; align-items:center; gap:12px;
+    padding:14px 10px;
+    border-bottom:1px dashed var(--line);
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .seller-row:hover{background:var(--panel);}
+  .seller-avatar{
+    width:42px; height:42px; border-radius:8px;
+    background:var(--panel-raised);
+    border:1px solid var(--line-bright);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Changa', sans-serif; font-weight:700; font-size:15px;
+    color:var(--amber);
+    flex-shrink:0;
+  }
+  .seller-mid{flex:1; min-width:0;}
+  .seller-name{
+    font-size:14px; font-weight:600;
+    display:flex; align-items:center; gap:5px;
+  }
+  .verified-tick{color:var(--steel); flex-shrink:0;}
+  .seller-meta{
+    font-size:11.5px; color:var(--text-muted);
+    margin-top:3px;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  }
+  .seller-meta .sep{opacity:0.5;}
+  .grade-pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    padding:1px 7px;
+    border-radius:10px;
+    border:1px solid var(--line-bright);
+  }
+  .grade-pill.g1{color:var(--green); border-color:var(--green);}
+  .seller-price{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--amber);
+    white-space:nowrap;
+  }
+  .seller-price small{display:block; font-size:9.5px; color:var(--text-muted); font-weight:400; text-align:left;}
+
+  .empty-offers{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--text-muted);
+    font-size:13.5px;
+  }
+
+  /* ===== شيت تفاصيل التاجر ===== */
+  .trader-detail{padding:6px 20px 26px;}
+  .trader-head{
+    display:flex; align-items:center; gap:14px;
+    padding:10px 0 18px;
+  }
+  .trader-avatar{
+    width:56px; height:56px; border-radius:10px;
+    background:var(--panel-raised);
+    border:1px solid var(--line-bright);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Changa', sans-serif; font-weight:700; font-size:20px;
+    color:var(--amber);
+    flex-shrink:0;
+  }
+  .trader-head h3{font-family:'Changa', sans-serif; font-size:18px; margin-bottom:4px;}
+  .trader-head .loc{font-size:12.5px; color:var(--text-muted);}
+
+  .detail-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-bottom:16px;
+  }
+  .detail-item{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:11px 13px;
+  }
+  .detail-item .k{font-size:10.5px; color:var(--text-muted); margin-bottom:4px;}
+  .detail-item .v{font-size:14px; font-weight:600;}
+  .detail-item.full{grid-column:1/-1;}
+
+  .price-box{
+    background:rgba(227,150,62,0.08);
+    border:1px solid var(--amber-dim);
+    border-radius:8px;
+    padding:16px;
+    text-align:center;
+    margin-bottom:16px;
+  }
+  .price-box .amount{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700; font-size:28px;
+    color:var(--amber);
+  }
+  .price-box .veh{font-size:12px; color:var(--text-muted); margin-top:4px;}
+
+  .call-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%;
+    background:var(--green);
+    color:#0e1a10;
+    border:none;
+    border-radius:6px;
+    font-weight:700; font-size:15px;
+    padding:14px;
+  }
+
+  .order-toggle-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%;
+    background:var(--amber);
+    color:#1a1408;
+    border:none;
+    border-radius:6px;
+    font-weight:700; font-size:15px;
+    padding:14px;
+    margin-top:10px;
+  }
+
+  .order-form{
+    display:none;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+  }
+  .order-form.open{display:block;}
+
+  .qty-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .qty-row .lbl{font-size:13px; color:var(--text-muted);}
+  .qty-stepper{display:flex; align-items:center; gap:10px;}
+  .qty-stepper button{
+    width:32px; height:32px;
+    border-radius:6px;
+    border:1px solid var(--line-bright);
+    background:var(--panel);
+    color:var(--text);
+    font-size:17px;
+  }
+  .qty-stepper span{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700; font-size:15px;
+    min-width:24px; text-align:center;
+  }
+
+  .order-field{margin-bottom:12px;}
+  .order-field label{display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;}
+  .order-field input, .order-field textarea{
+    width:100%; background:var(--panel); border:1px solid var(--line-bright);
+    border-radius:6px; padding:10px 12px; color:var(--text); font-size:13.5px; outline:none;
+  }
+  .order-field textarea{resize:vertical; min-height:60px;}
+  .order-field input:focus, .order-field textarea:focus{border-color:var(--amber);}
+
+  .order-total-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; margin-bottom:12px;
+    font-size:13.5px;
+  }
+  .order-total-row .val{
+    font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:18px; color:var(--amber);
+  }
+
+  .confirm-order-btn{
+    width:100%; background:var(--green); color:#0e1a10;
+    border:none; border-radius:6px; padding:14px;
+    font-weight:700; font-size:15px;
+  }
+  .confirm-order-btn:disabled{background:var(--line-bright); color:var(--text-muted);}
+
+  .order-msg{
+    margin-top:12px; padding:10px 14px; border-radius:6px; font-size:13px; display:none;
+  }
+  .order-msg.success{display:block; background:rgba(95,158,111,0.12); border:1px solid var(--green); color:var(--green);}
+  .order-msg.error{display:block; background:rgba(192,96,90,0.12); border:1px solid var(--red); color:var(--red);}
+
+  .skel{
+    background:linear-gradient(90deg, var(--panel) 25%, var(--panel-raised) 50%, var(--panel) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+    border-radius:6px;
+  }
+  @keyframes shimmer{ to{background-position:-200% 0;} }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
