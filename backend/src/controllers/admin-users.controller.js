@@ -120,7 +120,7 @@ async function getUserDetail(req, res) {
 
   try {
     const profileResult = await pool.query(
-      `SELECT id, full_name, username, email, phone, role, is_active, created_at, updated_at FROM profiles WHERE id = $1`,
+      `SELECT id, full_name, username, phone, role, is_active, created_at, updated_at FROM profiles WHERE id = $1`,
       [id]
     );
 
@@ -133,7 +133,7 @@ async function getUserDetail(req, res) {
     let supplierData = null;
     if (user.role === 'supplier') {
       const supplierResult = await pool.query(
-        `SELECT store_name, wilaya, is_verified, national_id FROM suppliers WHERE user_id = $1`,
+        `SELECT store_name, wilaya, address, is_verified, rating_avg FROM suppliers WHERE user_id = $1`,
         [id]
       );
       if (supplierResult.rows.length > 0) {
@@ -147,7 +147,6 @@ async function getUserDetail(req, res) {
         id: user.id,
         full_name: user.full_name || '-',
         username: user.username || '-',
-        email: user.email || '-',
         phone: user.phone || '-',
         role: user.role || '-',
         is_active: user.is_active || false,
@@ -155,8 +154,9 @@ async function getUserDetail(req, res) {
         updated_at: user.updated_at,
         store_name: supplierData?.store_name || null,
         wilaya: supplierData?.wilaya || null,
+        address: supplierData?.address || null,
         is_verified: supplierData?.is_verified || false,
-        national_id: supplierData?.national_id || null,
+        rating_avg: supplierData?.rating_avg || null,
         record_image: null,
         payment_image: null,
       },

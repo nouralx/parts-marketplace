@@ -296,7 +296,7 @@ async function deleteProductThorough(req, res) {
     await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
     await pool.query(`DELETE FROM product_vehicle_pricing WHERE product_id = $1`, [id]);
     await pool.query(
-      `DELETE FROM order_items WHERE pvp_id IN (SELECT id FROM product_vehicle_pricing WHERE product_id = $1) RETURNING order_id`,
+      `DELETE FROM order_items WHERE pricing_id IN (SELECT id FROM product_vehicle_pricing WHERE product_id = $1) RETURNING order_id`,
       [id]
     );
     await pool.query(`DELETE FROM orders WHERE id NOT IN (SELECT DISTINCT order_id FROM order_items)`);
@@ -338,7 +338,7 @@ async function deleteProductsBulk(req, res) {
       await pool.query(`DELETE FROM product_images WHERE product_id = $1`, [id]);
       await pool.query(`DELETE FROM product_vehicle_pricing WHERE product_id = $1`, [id]);
       await pool.query(
-        `DELETE FROM order_items WHERE pvp_id IN (SELECT id FROM product_vehicle_pricing WHERE product_id = $1)`,
+        `DELETE FROM order_items WHERE pricing_id IN (SELECT id FROM product_vehicle_pricing WHERE product_id = $1)`,
         [id]
       );
       await pool.query(`DELETE FROM products WHERE id = $1`, [id]);

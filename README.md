@@ -33,11 +33,14 @@ node src/server.js
 
 ## قاعدة البيانات
 
-1. أنشئ مشروع Supabase جديد (أو استخدم الحالي).
-2. في SQL Editor، شغّل محتوى `backend/schema.sql` بالكامل.
-3. أنشئ Storage Buckets:
-   - `supplier-documents` (خاص)
-   - `product-images` (عام)
+**تنبيه:** المشروع مربوط فعليًا بمشروع Supabase حقيقي (`ozyjzauukucwasoaotcv`) وفيه بيانات حقيقية. لا تشغّل `schema.sql` عليه — الجداول موجودة أصلاً. الملف موجود فقط كمرجع موثّق (لأنه ما كانش موجود من قبل إطلاقًا) ولإنشاء بيئة جديدة (staging) عند الحاجة.
+
+الجداول الموجودة تُظهر 3 ميزات لم تُبنَ أبدًا (موجودة كجداول فاضية بلا أي كود خلفي): `invoices` (فواتير)، `penalties` (عقوبات موردين)، `reviews` (تقييمات المشترين). قرار تنفيذها أو حذفها متروك لك.
+
+لإعداد بيئة جديدة من الصفر فقط:
+1. أنشئ مشروع Supabase جديد.
+2. شغّل `backend/schema.sql` في SQL Editor.
+3. أنشئ Storage Buckets: `supplier-documents` (خاص) و`product-images` (عام).
 4. أنشئ أول حساب أدمن يدويًا (التعليمات في آخر `schema.sql`).
 
 ## النشر على Northflank

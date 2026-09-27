@@ -14,7 +14,8 @@ async function getProfile(req, res) {
   if (req.user.role !== 'supplier') return res.status(403).json({ success: false, error: 'هذه الميزة للموردين فقط' });
   try {
     const result = await pool.query(
-      `SELECT s.id, s.store_name, s.wilaya, s.is_verified, s.subscription_status, s.subscription_end, s.penalty_points,
+      `SELECT s.id, s.store_name, s.wilaya, s.address, s.is_verified, s.subscription_status, s.subscription_end,
+              s.penalty_points, s.rating_avg,
               p.full_name, p.phone, p.username
        FROM suppliers s
        JOIN profiles p ON p.id = s.user_id
