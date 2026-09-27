@@ -1,103 +1,40 @@
 /**
  * Logger Configuration
- * Centralized logging for the application
+ * Centralized, dependency-free logging for the application.
  */
 
 const config = require('./environment');
 
-/**
- * Simple Logger Implementation
- * In production, use Winston or Bunyan
- */
 class Logger {
   constructor() {
-    this.level = config.logging.level;
-    this.dir = config.logging.dir;
-    this.levels = {
-      error: 0,
-      warn: 1,
-      info: 2,
-      debug: 3,
-    };
+    this.isDevelopment = !config.isProduction;
   }
 
-  /**
-   * Format log message
-   */
-  format(level, message, data = {}) {
+  format(level, message) {
     const timestamp = new Date().toISOString();
-    const logObject = {
-      timestamp,
-      level,
-      message,
-      ...data,
-      env: config.nodeEnv,
-    };
-
-    if (config.isDevelopment) {
-      return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-    }
-
-    return JSON.stringify(logObject);
+    return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
   }
 
-  /**
-   * Log error message
-   */
-  error(message, error = {}) {
-    console.error(
-      this.format('error', message, {
-        stack: error.stack,
-        code: error.code,
-      })
-    );
+  error(message) {
+    console.error(this.format('error', message));
   }
 
-  /**
-   * Log warning message
-   */
-  warn(message, data = {}) {
-    console.warn(this.format('warn', message, data));
+  warn(message) {
+    console.warn(this.format('warn', message));
   }
 
-  /**
-   * Log info message
-   */
-  info(message, data = {}) {
-    if (this.levels[this.level] >= this.levels['info']) {
-      console.log(this.format('info', message, data));
+  info(message) {
+    console.log(this.format('info', message));
+  }
+
+  debug(message) {
+    if (this.isDevelopment) {
+      console.log(this.format('debug', message));
     }
   }
 
-  /**
-   * Log debug message
-   */
-  debug(message, data = {}) {
-    if (this.levels[this.level] >= this.levels['debug']) {
-      console.log(this.format('debug', message, data));
-    }
-  }
-
-  /**
-   * Log request
-   */
-  request(req, duration) {
-    const data = {
-      method: req.method,
-      path: req.path,
-      status: req.res?.statusCode,
-      duration: `${duration}ms`,
-      ip: req.ip,
-    };
-
-    this.info(`API Request: ${req.method} ${req.path}`, data);
-  }
-
-  /**
-   * Log database query
-   */
-  query(query, duration) {
-    this.debug(`Database Query (${duration}ms)`, { query: query.substring(0, 100) });
+  request(req, statusCode, duration) {
+    this.info(`${req.method} ${req.originalUrl} ${statusCode} - ${duration}ms`);
   }
 }
 

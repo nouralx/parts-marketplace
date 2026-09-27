@@ -1,150 +1,42 @@
-/**
- * Admin Routes
- * All admin-related endpoints
- */
-
 const express = require('express');
-const { asyncHandler } = require('../middleware/errorHandler');
 const { checkAdminAuth, requirePermission } = require('../middleware/auth');
+const adminUsers = require('../controllers/admin-users.controller');
+const adminCatalog = require('../controllers/admin-catalog.controller');
 
 const router = express.Router();
 
-// All admin routes require authentication
-router.use(checkAdminAuth);
+// Every /api/admin/* route requires a valid admin/staff session.
+router.use('/admin', checkAdminAuth);
 
-/**
- * Users Management
- */
+// Supplier verification
+router.get('/admin/supplier-requests', requirePermission('can_review_suppliers'), adminUsers.getSupplierRequests);
+router.get('/admin/document-url', requirePermission('can_review_suppliers'), adminUsers.getDocumentUrl);
+router.post('/admin/review-supplier', requirePermission('can_review_suppliers'), adminUsers.reviewSupplier);
 
-// Get all users
-router.get(
-  '/users',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement getUsersController
-    res.json({
-      success: true,
-      message: 'Admin get users - to be implemented',
-      data: [],
-    });
-  })
-);
+// User management
+router.get('/admin/users', requirePermission('can_manage_users'), adminUsers.getUsers);
+router.post('/admin/toggle-user-status', requirePermission('can_manage_users'), adminUsers.toggleUserStatus);
+router.get('/admin/user-detail/:id', requirePermission('can_manage_users'), adminUsers.getUserDetail);
+router.delete('/admin/users/:id', requirePermission('can_manage_users'), adminUsers.deleteUser);
 
-// Get user detail
-router.get(
-  '/user-detail/:id',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement getUserDetailController
-    res.json({
-      success: true,
-      message: 'Admin get user detail - to be implemented',
-      data: null,
-    });
-  })
-);
+// Product & pricing review
+router.get('/admin/pending-products', requirePermission('can_manage_products'), adminCatalog.getPendingProducts);
+router.get('/admin/all-approved-products', requirePermission('can_manage_products'), adminCatalog.getAllApprovedProducts);
+router.get('/admin/product-suppliers/:productId', requirePermission('can_manage_products'), adminCatalog.getProductSuppliers);
+router.post('/admin/review-product', requirePermission('can_manage_products'), adminCatalog.reviewProduct);
+router.get('/admin/pending-pricing', requirePermission('can_manage_products'), adminCatalog.getPendingPricing);
+router.post('/admin/review-pricing', requirePermission('can_manage_products'), adminCatalog.reviewPricing);
 
-// Toggle user status
-router.post(
-  '/toggle-user-status',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement toggleUserStatusController
-    res.json({
-      success: true,
-      message: 'User status toggled - to be implemented',
-    });
-  })
-);
+// Product deletion (two legacy endpoints, kept both for frontend compatibility)
+router.delete('/admin/products/:id', requirePermission('can_delete_products'), adminCatalog.deleteProductSimple);
+router.delete('/admin/delete-product/:id', requirePermission('can_delete_products'), adminCatalog.deleteProductThorough);
+router.post('/admin/delete-products-bulk', requirePermission('can_delete_products'), adminCatalog.deleteProductsBulk);
 
-// Delete user
-router.delete(
-  '/users/:id',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement deleteUserController
-    res.json({
-      success: true,
-      message: 'User deleted - to be implemented',
-    });
-  })
-);
+// Activity log (main admin only — enforced inside the controllers)
+router.get('/admin/activity-log', adminCatalog.getActivityLog);
+router.delete('/admin/activity-log', adminCatalog.deleteActivityLog);
 
-/**
- * Products Management
- */
-
-// Get all approved products
-router.get(
-  '/all-approved-products',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement getApprovedProductsController
-    res.json({
-      success: true,
-      message: 'Admin get approved products - to be implemented',
-      data: [],
-    });
-  })
-);
-
-// Get product suppliers
-router.get(
-  '/product-suppliers/:id',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement getProductSuppliersController
-    res.json({
-      success: true,
-      message: 'Admin get product suppliers - to be implemented',
-      data: [],
-    });
-  })
-);
-
-// Delete product
-router.delete(
-  '/products/:id',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement deleteProductController
-    res.json({
-      success: true,
-      message: 'Product deleted - to be implemented',
-    });
-  })
-);
-
-/**
- * Dashboard Statistics
- */
-
-// Get dashboard stats
-router.get(
-  '/dashboard/stats',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement getDashboardStatsController
-    res.json({
-      success: true,
-      message: 'Dashboard stats - to be implemented',
-      data: {
-        totalUsers: 0,
-        totalProducts: 0,
-        totalOrders: 0,
-        totalRevenue: 0,
-      },
-    });
-  })
-);
-
-/**
- * Activity Logs
- */
-
-// Get activity logs
-router.get(
-  '/logs',
-  asyncHandler(async (req, res) => {
-    // TODO: Implement getLogsController
-    res.json({
-      success: true,
-      message: 'Activity logs - to be implemented',
-      data: [],
-    });
-  })
-);
+// Orders oversight
+router.get('/admin/orders', requirePermission('can_manage_orders'), adminCatalog.getAdminOrders);
 
 module.exports = router;

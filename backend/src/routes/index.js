@@ -1,49 +1,27 @@
 /**
- * Main Routes Configuration
- * Combines all route modules
+ * Route aggregator.
+ * NOTE: all sub-routers use flat legacy paths (/api/login, /api/catalog/:id,
+ * /api/supplier/listings, ...) to stay compatible with the existing frontend.
+ * admin routes will be added in a later phase.
  */
 
 const express = require('express');
-const adminRoutes = require('./admin.routes');
-const supplierRoutes = require('./supplier.routes');
-const catalogRoutes = require('./catalog.routes');
 const authRoutes = require('./auth.routes');
+const catalogRoutes = require('./catalog.routes');
+const supplierRoutes = require('./supplier.routes');
+const ordersRoutes = require('./orders.routes');
+const adminRoutes = require('./admin.routes');
 
 const router = express.Router();
 
-/**
- * API Routes
- */
+router.use('/', authRoutes);
+router.use('/', catalogRoutes);
+router.use('/', supplierRoutes);
+router.use('/', ordersRoutes);
+router.use('/', adminRoutes);
 
-// Health check
-router.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-  });
+router.get('/', (req, res) => {
+  res.json({ success: true, message: 'API شغالة' });
 });
-
-// Status check
-router.get('/status', (req, res) => {
-  res.json({
-    success: true,
-    status: 'operational',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Auth routes
-router.use('/auth', authRoutes);
-
-// Admin routes
-router.use('/admin', adminRoutes);
-
-// Supplier routes
-router.use('/supplier', supplierRoutes);
-
-// Catalog routes
-router.use('/catalog', catalogRoutes);
 
 module.exports = router;

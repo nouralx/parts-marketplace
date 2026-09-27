@@ -1,23 +1,21 @@
-FROM node:18-alpine
+# Single-service image: the Node app serves the API and the static
+# frontend together — no separate nginx container needed on Northflank
+# (it terminates TLS and routes traffic for you).
+
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY backend/package*.json ./
+COPY backend/package*.json ./backend/
+RUN cd backend && npm ci --omit=dev
 
-# Install dependencies
-RUN npm ci --only=production
+COPY backend ./backend
+COPY frontend ./frontend
 
-# Copy application code
-COPY backend/src ./src
-COPY frontend ./public
-
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => { if (r.statusCode !== 200) process.exit(1) })"
 
-# Run application
+WORKDIR /app/backend
 CMD ["node", "src/server.js"]
