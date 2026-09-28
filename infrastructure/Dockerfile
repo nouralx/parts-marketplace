@@ -2,7 +2,7 @@
 # frontend together — no separate nginx container needed on Northflank
 # (it terminates TLS and routes traffic for you).
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
